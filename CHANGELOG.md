@@ -1,3 +1,9 @@
+## v0.1.2 (2026-01-12)
+
+### Fix
+
+- ensure trailing newline in README
+
 ## v0.1.1 (2026-01-12)
 
 ### Fix
