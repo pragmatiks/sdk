@@ -1,6 +1,6 @@
-# Pragma SDK
+# Pragmatiks SDK
 
-Python SDK for building providers and interacting with the Pragma platform.
+Python SDK for building providers and interacting with the Pragmatiks platform.
 
 ## Installation
 
