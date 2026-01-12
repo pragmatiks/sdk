@@ -2,18 +2,20 @@ name: Publish SDK
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 jobs:
-  build-and-publish:
+  bump-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -23,16 +25,44 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
+      - name: Install commitizen
+        run: uv tool install commitizen
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        id: bump
+        run: |
+          if cz bump --yes --changelog 2>&1 | tee bump_output.txt; then
+            echo "bumped=true" >> $GITHUB_OUTPUT
+            NEW_VERSION=$(cz version --project)
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          else
+            if grep -q "No commits found" bump_output.txt || grep -q "is not a bump" bump_output.txt; then
+              echo "No version bump needed"
+              echo "bumped=false" >> $GITHUB_OUTPUT
+            else
+              cat bump_output.txt
+              exit 1
+            fi
+          fi
+
+      - name: Push changes
+        if: steps.bump.outputs.bumped == 'true'
+        run: git push origin main --tags
+
       - name: Build package
+        if: steps.bump.outputs.bumped == 'true'
         run: uv build
 
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
       - name: Create GitHub Release
+        if: steps.bump.outputs.bumped == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          name: "pragmatiks-sdk v${{ steps.version.outputs.version }}"
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: pragmatiks-sdk v${{ steps.bump.outputs.version }}
           files: dist/*
           generate_release_notes: true
