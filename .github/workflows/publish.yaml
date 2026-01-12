@@ -77,7 +77,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: pragmatiks
-          repositories: providers
+          repositories: providers,cli
 
       - name: Trigger providers update
         if: steps.bump.outputs.bumped == 'true'
@@ -86,4 +86,13 @@ jobs:
         run: |
           gh workflow run update-sdk.yaml \
             --repo pragmatiks/providers \
+            --field sdk_version=${{ steps.bump.outputs.version }}
+
+      - name: Trigger CLI update
+        if: steps.bump.outputs.bumped == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh workflow run update-sdk.yaml \
+            --repo pragmatiks/cli \
             --field sdk_version=${{ steps.bump.outputs.version }}
