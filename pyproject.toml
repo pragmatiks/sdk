@@ -1,0 +1,51 @@
+[project]
+name = "pragmatiks-sdk"
+version = "0.1.0a1"
+description = "Python SDK for the Pragmatiks platform"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["httpx>=0.28.1", "pydantic>=2.11.4", "pyyaml>=6.0"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+
+[dependency-groups]
+test = [
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=7.0.0",
+    "pytest-mock>=3.14.0",
+    "respx>=0.21.1",
+]
+dev = [
+    "commitizen>=4.11.0",
+    "pre-commit>=4.0.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["tests"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = ["pragma_sdk"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0a1"
+version_files = ["pyproject.toml:^version"]
+tag_format = "sdk-v$version"
+update_changelog_on_bump = true
+changelog_file = "CHANGELOG.md"
+
+[tool.uv.build-backend]
+module-name = "pragma_sdk"
+
+[build-system]
+requires = ["uv_build>=0.9.8"]
+build-backend = "uv_build"
