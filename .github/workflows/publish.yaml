@@ -64,7 +64,9 @@ jobs:
         with:
           tag_name: v${{ steps.bump.outputs.version }}
           name: pragmatiks-sdk v${{ steps.bump.outputs.version }}
-          files: dist/*
+          files: |
+            dist/*.tar.gz
+            dist/*.whl
           generate_release_notes: true
 
       - name: Generate GitHub App token
