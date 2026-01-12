@@ -1,3 +1,9 @@
+## v0.1.3 (2026-01-12)
+
+### Fix
+
+- **ci**: only upload .tar.gz and .whl to release
+
 ## v0.1.2 (2026-01-12)
 
 ### Fix
