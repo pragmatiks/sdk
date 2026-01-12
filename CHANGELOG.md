@@ -1,3 +1,9 @@
+## v0.2.0 (2026-01-12)
+
+### Feat
+
+- trigger CLI update on SDK release
+
 ## v0.1.3 (2026-01-12)
 
 ### Fix
