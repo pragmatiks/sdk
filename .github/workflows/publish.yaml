@@ -66,3 +66,12 @@ jobs:
           name: pragmatiks-sdk v${{ steps.bump.outputs.version }}
           files: dist/*
           generate_release_notes: true
+
+      - name: Trigger providers update
+        if: steps.bump.outputs.bumped == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PROVIDERS_UPDATE_TOKEN }}
+        run: |
+          gh workflow run update-sdk.yaml \
+            --repo pragmatiks/providers \
+            --field sdk_version=${{ steps.bump.outputs.version }}
