@@ -1,3 +1,9 @@
+## v0.2.1 (2026-01-13)
+
+### Refactor
+
+- use absolute imports instead of relative
+
 ## v0.2.0 (2026-01-12)
 
 ### Feat
