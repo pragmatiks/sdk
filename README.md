@@ -1,112 +1,98 @@
 # Pragmatiks SDK
 
-Python SDK for building providers and interacting with the Pragmatiks platform.
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pragmatiks/sdk)
+[![PyPI version](https://img.shields.io/pypi/v/pragmatiks-sdk.svg)](https://pypi.org/project/pragmatiks-sdk/)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
+**[Documentation](https://docs.pragmatiks.io/sdk/overview)** | **[CLI](https://github.com/pragmatiks/cli)** | **[Providers](https://github.com/pragmatiks/providers)**
+
+Build providers and interact with the Pragmatiks platform programmatically.
+
+<!-- TODO: Add logo and demo GIF -->
+
+## Quick Start
+
+```python
+from pragma_sdk import PragmaClient, Resource
+
+with PragmaClient() as client:
+    # Apply a resource
+    client.apply_resource(
+        Resource(
+            provider="gcp",
+            resource="storage",
+            name="my-bucket",
+            config={"location": "US", "storage_class": "STANDARD"}
+        )
+    )
+
+    # Get resource status
+    bucket = client.get_resource("gcp", "storage", "my-bucket")
+    print(bucket.outputs)
+```
 
 ## Installation
+
+```bash
+pip install pragmatiks-sdk
+```
+
+Or with uv:
 
 ```bash
 uv add pragmatiks-sdk
 ```
 
-## Quick Start
+## Features
 
-### HTTP Clients
+- **HTTP Clients** - Sync and async clients for the Pragma API
+- **Provider Authoring** - Build custom providers with type-safe Config and Outputs
+- **Field References** - Reference outputs from other resources dynamically
+- **Testing Harness** - Test provider lifecycle methods locally without deployment
+- **Auto-discovery** - Automatic credential resolution from environment or config files
 
-Interact with the Pragma API using sync or async clients:
+## Building Providers
 
-```python
-from pragma_sdk import PragmaClient, AsyncPragmaClient, Resource
-
-# Synchronous client
-with PragmaClient() as client:
-    resources = client.list_resources(provider="postgres")
-    db = client.get_resource("postgres", "database", "my-db")
-
-    resource = client.apply_resource(
-        Resource(
-            provider="postgres",
-            resource="database",
-            name="my-db",
-            config={"name": "analytics", "size_gb": 100}
-        )
-    )
-
-    client.delete_resource("postgres", "database", "my-db")
-
-# Asynchronous client
-async with AsyncPragmaClient() as client:
-    resources = await client.list_resources(provider="postgres")
-    db = await client.get_resource("postgres", "database", "my-db")
-    await client.delete_resource("postgres", "database", "my-db")
-```
-
-## Provider Authoring
-
-Build providers that manage infrastructure resources with type-safe configuration and outputs.
-
-### Basic Provider
+Define resources with typed configuration and lifecycle methods:
 
 ```python
 from pragma_sdk import Provider, Resource, Config, Outputs, Field
 
-# Create a provider namespace
-postgres = Provider(name="postgres")
+gcp = Provider(name="gcp")
 
-# Define configuration schema
-class DatabaseConfig(Config):
-    db_name: Field[str]
-    size_gb: Field[int] = 10
-    owner: Field[str] = "postgres"
+class BucketConfig(Config):
+    location: Field[str]
+    storage_class: Field[str] = "STANDARD"
 
-# Define output schema
-class DatabaseOutputs(Outputs):
-    connection_url: str
+class BucketOutputs(Outputs):
+    url: str
     created_at: str
 
-# Implement resource lifecycle
-@postgres.resource("database")
-class Database(Resource[DatabaseConfig, DatabaseOutputs]):
-    async def on_create(self) -> DatabaseOutputs:
-        # Create the database
-        return DatabaseOutputs(
-            connection_url=f"postgres://localhost/{self.config.db_name}",
-            created_at="2025-01-01T00:00:00Z"
-        )
+@gcp.resource("storage")
+class Bucket(Resource[BucketConfig, BucketOutputs]):
+    async def on_create(self) -> BucketOutputs:
+        # Provision the bucket
+        return BucketOutputs(url=f"gs://{self.name}", created_at="...")
 
-    async def on_update(self, previous_config: DatabaseConfig) -> DatabaseOutputs:
-        # Update the database if config changed
-        if previous_config.size_gb != self.config.size_gb:
-            # Resize database
-            pass
-        return self.outputs  # type: ignore
+    async def on_update(self, previous_config: BucketConfig) -> BucketOutputs:
+        # Handle config changes
+        return self.outputs
 
     async def on_delete(self) -> None:
-        # Delete the database
+        # Clean up
         pass
 ```
 
-### Resource Lifecycle
-
-Resources follow a 5-state lifecycle:
-
-```
-DRAFT → PENDING (commit)
-PENDING → PROCESSING (provider picks up)
-PROCESSING → READY (success) | FAILED (error)
-READY/FAILED → PENDING (update/retry)
-READY/FAILED → DRAFT (uncommit)
-```
-
-### Field References
+## Field References
 
 Reference outputs from other resources:
 
 ```python
 from pragma_sdk import FieldReference
 
-app_config = AppConfig(
-    name="my-app",
-    # Reference database URL instead of hardcoding
+config = AppConfig(
     database_url=FieldReference(
         provider="postgres",
         resource="database",
@@ -118,127 +104,79 @@ app_config = AppConfig(
 
 ## Testing Providers
 
-Use `ProviderHarness` to test lifecycle methods locally without platform infrastructure:
+Test lifecycle methods locally with `ProviderHarness`:
 
 ```python
 from pragma_sdk.provider import ProviderHarness
 
-async def test_database_creation():
+async def test_bucket_creation():
     harness = ProviderHarness()
 
-    # Test on_create
     result = await harness.invoke_create(
-        Database,
-        name="test-db",
-        config=DatabaseConfig(db_name="test-db", size_gb=10)
+        Bucket,
+        name="test-bucket",
+        config=BucketConfig(location="US")
     )
 
     assert result.success
-    assert result.outputs.connection_url == "postgres://localhost/test-db"
-
-    # Test on_update
-    result = await harness.invoke_update(
-        Database,
-        name="test-db",
-        config=DatabaseConfig(db_name="test-db", size_gb=20),
-        previous_config=DatabaseConfig(db_name="test-db", size_gb=10),
-        current_outputs=result.outputs
-    )
-
-    assert result.success
-
-    # Test on_delete
-    result = await harness.invoke_delete(
-        Database,
-        name="test-db",
-        config=DatabaseConfig(db_name="test-db")
-    )
-
-    assert result.success
+    assert "gs://test-bucket" in result.outputs.url
 ```
 
 ## Authentication
 
-Credentials are discovered automatically in this order:
+Credentials are discovered automatically:
 
 1. Explicit `auth_token` parameter
-2. Context-specific environment variable: `PRAGMA_AUTH_TOKEN_<CONTEXT>`
-3. Generic environment variable: `PRAGMA_AUTH_TOKEN`
-4. Credentials file: `~/.config/pragma/credentials`
+2. Environment variable: `PRAGMA_AUTH_TOKEN`
+3. Credentials file: `~/.config/pragma/credentials`
 
 ```python
-# Auto-discover from environment or credentials file
+# Auto-discover credentials
 client = PragmaClient()
 
 # Explicit token
-client = PragmaClient(auth_token="eyJhbGc...")
+client = PragmaClient(auth_token="sk_...")
 
-# Specific context
-client = PragmaClient(context="production")
-
-# Require authentication (fail if no token found)
-client = PragmaClient(context="production", require_auth=True)
-```
-
-### Environment Variables
-
-```bash
-# Generic token (all contexts)
-export PRAGMA_AUTH_TOKEN=sk_test_...
-
-# Context-specific token
-export PRAGMA_AUTH_TOKEN_PRODUCTION=sk_prod_...
-export PRAGMA_CONTEXT=production
+# Require authentication (fail if no token)
+client = PragmaClient(require_auth=True)
 ```
 
 ## API Reference
 
-### HTTP Clients
+### HTTP Client Methods
 
-Both `PragmaClient` and `AsyncPragmaClient` provide:
-
-- `is_healthy()` - Check API health
-- `list_resources(provider, resource, tags)` - List resources
-- `get_resource(provider, resource, name)` - Get a resource
-- `apply_resource(resource)` - Create or update a resource
-- `delete_resource(provider, resource, name)` - Delete a resource
-- `register_resource(provider, resource, schema, description, tags)` - Register a resource type
-- `unregister_resource(provider, resource)` - Unregister a resource type
+| Method | Description |
+|--------|-------------|
+| `list_resources(provider, resource, tags)` | List resources with optional filters |
+| `get_resource(provider, resource, name)` | Get a specific resource |
+| `apply_resource(resource)` | Create or update a resource |
+| `delete_resource(provider, resource, name)` | Delete a resource |
+| `is_healthy()` | Check API health |
 
 ### Provider Classes
 
-- `Provider(name)` - Provider namespace
-  - `@provider.resource(name)` - Decorator to register resources
-
-- `Resource[ConfigT, OutputsT]` - Base class for resources
-  - `on_create()` - Handle resource creation
-  - `on_update(previous_config)` - Handle resource updates
-  - `on_delete()` - Handle resource deletion
-
-- `Config` - Base class for resource configuration
-- `Outputs` - Base class for resource outputs
-- `Field[T]` - Type alias for `T | FieldReference`
-
-### Testing
-
-- `ProviderHarness` - Local test harness
-  - `invoke_create(resource_class, name, config, tags)` - Test on_create
-  - `invoke_update(resource_class, name, config, previous_config, current_outputs, tags)` - Test on_update
-  - `invoke_delete(resource_class, name, config, current_outputs, tags)` - Test on_delete
-  - `events` - List of lifecycle events
-  - `results` - List of lifecycle results
-  - `clear()` - Clear event and result history
+| Class | Description |
+|-------|-------------|
+| `Provider(name)` | Provider namespace with `@provider.resource()` decorator |
+| `Resource[ConfigT, OutputsT]` | Base class with `on_create`, `on_update`, `on_delete` |
+| `Config` | Base class for resource configuration (Pydantic model) |
+| `Outputs` | Base class for resource outputs (Pydantic model) |
+| `Field[T]` | Type alias for `T | FieldReference` |
+| `ProviderHarness` | Local testing harness |
 
 ## Development
 
 ```bash
 # Run tests
-pytest
+task sdk:test
 
 # Format code
-ruff format
+task sdk:format
 
-# Lint
-ruff check
+# Type check and lint
+task sdk:check
 ```
 
+## License
+
+MIT
