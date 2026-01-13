@@ -1,3 +1,9 @@
+## v0.3.1 (2026-01-13)
+
+### Fix
+
+- add pypi environment for trusted publisher
+
 ## v0.3.0 (2026-01-13)
 
 ### Feat
