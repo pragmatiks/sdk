@@ -7,7 +7,7 @@ import pkgutil
 
 from pragma_sdk.models import Resource
 
-from .provider import RESOURCE_MARKER
+from pragma_sdk.provider.provider import RESOURCE_MARKER
 
 
 def discover_resources(package_name: str) -> dict[tuple[str, str], type[Resource]]:

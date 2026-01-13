@@ -36,14 +36,14 @@ Example:
         assert result.success
 """
 
-from .discovery import discover_resources, is_registered_resource
-from .harness import (
+from pragma_sdk.provider.discovery import discover_resources, is_registered_resource
+from pragma_sdk.provider.harness import (
     EventType,
     LifecycleEvent,
     LifecycleResult,
     ProviderHarness,
 )
-from .provider import RESOURCE_MARKER, Provider
+from pragma_sdk.provider.provider import RESOURCE_MARKER, Provider
 
 
 __all__ = [
