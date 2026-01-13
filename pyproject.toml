@@ -12,6 +12,12 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.optional-dependencies]
+gcp = ["pragmatiks-gcp-provider"]
+# aws = ["pragmatiks-aws-provider"]  # future
+# azure = ["pragmatiks-azure-provider"]  # future
+all = ["pragmatiks-gcp-provider"]
+
 [dependency-groups]
 test = [
     "pytest>=8.4.1",
