@@ -1,3 +1,9 @@
+## v0.3.0 (2026-01-13)
+
+### Feat
+
+- add PyPI publishing with trusted publisher
+
 ## v0.2.1 (2026-01-13)
 
 ### Refactor
