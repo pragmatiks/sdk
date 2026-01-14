@@ -42,13 +42,13 @@ class PushResult(BaseModel):
     """Result from pushing provider code to start a build.
 
     Attributes:
-        build_id: Unique identifier for the build.
-        job_name: Name of the Kubernetes build job.
+        version: CalVer version for the build (YYYYMMDD.HHMMSS).
+        job_name: Name of the Cloud Build job.
         status: Initial build status (typically pending).
         message: Status message from the API.
     """
 
-    build_id: str
+    version: str
     job_name: str
     status: BuildStatus
     message: str
