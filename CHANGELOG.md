@@ -1,3 +1,9 @@
+## v0.5.0 (2026-01-14)
+
+### Feat
+
+- update PushResult to use CalVer version instead of build_id
+
 ## v0.4.0 (2026-01-14)
 
 ### Feat
