@@ -88,6 +88,34 @@ class DeploymentResult(BaseModel):
     message: str | None = None
 
 
+class ProviderDeleteResult(BaseModel):
+    """Result of a provider delete operation.
+
+    Attributes:
+        provider_id: Provider that was deleted.
+        deployment_deleted: Whether the Kubernetes deployment was deleted.
+        builds_cancelled: Number of Cloud Build jobs cancelled.
+        source_archives_deleted: Number of GCS source archives deleted.
+        resources_deleted: Number of resources deleted (if cascade).
+        resource_definitions_deleted: Number of resource definitions deleted.
+        outbox_events_deleted: Number of outbox events deleted.
+        dead_letter_events_deleted: Number of dead letter events deleted.
+        messages_purged: Number of NATS messages purged from the event stream.
+        consumer_deleted: Whether the NATS durable consumer was deleted.
+    """
+
+    provider_id: str
+    deployment_deleted: bool = False
+    builds_cancelled: int = 0
+    source_archives_deleted: int = 0
+    resources_deleted: int = 0
+    resource_definitions_deleted: int = 0
+    outbox_events_deleted: int = 0
+    dead_letter_events_deleted: int = 0
+    messages_purged: int = 0
+    consumer_deleted: bool = False
+
+
 class EventType(StrEnum):
     """Resource lifecycle event type: CREATE, UPDATE, or DELETE."""
 
@@ -211,12 +239,18 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
 
     async def on_create(self) -> OutputsT:
         """Handle resource creation."""
-        raise NotImplementedError(f"{self.__class__.__name__} must implement on_create()")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement on_create()"
+        )
 
     async def on_update(self, previous_config: ConfigT) -> OutputsT:
         """Handle resource update with access to the previous configuration."""
-        raise NotImplementedError(f"{self.__class__.__name__} must implement on_update()")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement on_update()"
+        )
 
     async def on_delete(self) -> None:
         """Handle resource deletion."""
-        raise NotImplementedError(f"{self.__class__.__name__} must implement on_delete()")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement on_delete()"
+        )
