@@ -1,3 +1,9 @@
+## v0.4.0 (2026-01-14)
+
+### Feat
+
+- add ProviderDeleteResult model and delete_provider client method
+
 ## v0.3.1 (2026-01-13)
 
 ### Fix
