@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/pragmatiks/pragmatiks/main/assets/pragmatiks_brand/wordmark/tech_readout.png" alt="Pragmatiks" width="800">
+</p>
+
 # Pragmatiks SDK
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pragmatiks/sdk)
@@ -9,8 +13,6 @@
 **[Documentation](https://docs.pragmatiks.io/sdk/overview)** | **[CLI](https://github.com/pragmatiks/cli)** | **[Providers](https://github.com/pragmatiks/providers)**
 
 Build providers and interact with the Pragmatiks platform programmatically.
-
-<!-- TODO: Add logo and demo GIF -->
 
 ## Quick Start
 
