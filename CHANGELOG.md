@@ -1,3 +1,9 @@
+## v0.6.0 (2026-01-14)
+
+### Feat
+
+- add provider list, rollback, status, and builds methods
+
 ## v0.5.0 (2026-01-14)
 
 ### Feat
