@@ -70,6 +70,24 @@ class BuildResult(BaseModel):
     error_message: str | None = None
 
 
+class BuildInfo(BaseModel):
+    """Build information for a provider version.
+
+    Attributes:
+        provider_id: Provider identifier.
+        version: CalVer version string (YYYYMMDD.HHMMSS).
+        status: Current build status.
+        error_message: Error message (set on failure).
+        created_at: When the build was created.
+    """
+
+    provider_id: str
+    version: str
+    status: BuildStatus
+    error_message: str | None = None
+    created_at: datetime
+
+
 class DeploymentResult(BaseModel):
     """Result of a deployment status query.
 
@@ -78,6 +96,8 @@ class DeploymentResult(BaseModel):
         status: Current deployment status.
         available_replicas: Number of available replicas.
         ready_replicas: Number of ready replicas.
+        image: Container image reference (e.g., registry/image:version).
+        updated_at: Last update timestamp from deployment conditions.
         message: Status message or error details.
     """
 
@@ -85,7 +105,25 @@ class DeploymentResult(BaseModel):
     status: DeploymentStatus
     available_replicas: int = 0
     ready_replicas: int = 0
+    image: str | None = None
+    updated_at: datetime | None = None
     message: str | None = None
+
+
+class ProviderInfo(BaseModel):
+    """Provider information from API list endpoint.
+
+    Attributes:
+        provider_id: Unique identifier for the provider.
+        current_version: CalVer of currently deployed build (None if never deployed).
+        deployment_status: Current deployment status (None if not deployed).
+        updated_at: Timestamp of last provider update (typically last deployment).
+    """
+
+    provider_id: str
+    current_version: str | None = None
+    deployment_status: DeploymentStatus | None = None
+    updated_at: datetime | None = None
 
 
 class ProviderDeleteResult(BaseModel):

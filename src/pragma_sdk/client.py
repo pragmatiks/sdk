@@ -11,9 +11,11 @@ import httpx
 from pragma_sdk.auth import BearerAuth
 from pragma_sdk.config import get_token_for_context
 from pragma_sdk.models import (
+    BuildInfo,
     BuildResult,
     DeploymentResult,
     ProviderDeleteResult,
+    ProviderInfo,
     PushResult,
     Resource,
     ResourceDefinition,
@@ -475,6 +477,46 @@ class PragmaClient(BaseClient):
         )
         return DeploymentResult.model_validate(response)
 
+    def list_builds(self, provider_id: str) -> list[BuildInfo]:
+        """List builds for a provider.
+
+        Returns the last 10 builds ordered by creation time (newest first).
+
+        Args:
+            provider_id: Unique identifier for the provider.
+
+        Returns:
+            List of BuildInfo for the provider's builds.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails.
+        """  # noqa: DOC502
+        response = self._request("GET", f"/providers/{provider_id}/builds")
+        return [BuildInfo.model_validate(build) for build in response]
+
+    def rollback_provider(self, provider_id: str, version: str) -> DeploymentResult:
+        """Rollback a provider to a previous build version.
+
+        Deploys the specified build version. The build must exist and
+        have status SUCCESS.
+
+        Args:
+            provider_id: Unique identifier for the provider.
+            version: CalVer version string (YYYYMMDD.HHMMSS) to rollback to.
+
+        Returns:
+            DeploymentResult with deployment state.
+
+        Raises:
+            httpx.HTTPStatusError: 404 if build not found, 400 if build not deployable.
+        """  # noqa: DOC502
+        response = self._request(
+            "POST",
+            f"/providers/{provider_id}/rollback",
+            json_data={"version": version},
+        )
+        return DeploymentResult.model_validate(response)
+
     def get_deployment_status(self, provider_id: str) -> DeploymentResult:
         """Get the deployment status for a provider.
 
@@ -512,6 +554,21 @@ class PragmaClient(BaseClient):
         params = {"cascade": "true"} if cascade else {}
         response = self._request("DELETE", f"/providers/{provider_id}", params=params)
         return ProviderDeleteResult.model_validate(response)
+
+    def list_providers(self) -> list[ProviderInfo]:
+        """List all providers for the current tenant.
+
+        Returns providers with their deployment status. Providers that have
+        been pushed but not deployed will have deployment_status=None.
+
+        Returns:
+            List of ProviderInfo with provider metadata and deployment status.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails.
+        """  # noqa: DOC502
+        response = self._request("GET", "/providers/")
+        return [ProviderInfo.model_validate(item) for item in response]
 
 
 class AsyncPragmaClient(BaseClient):
@@ -925,6 +982,46 @@ class AsyncPragmaClient(BaseClient):
         )
         return DeploymentResult.model_validate(response)
 
+    async def list_builds(self, provider_id: str) -> list[BuildInfo]:
+        """List builds for a provider.
+
+        Returns the last 10 builds ordered by creation time (newest first).
+
+        Args:
+            provider_id: Unique identifier for the provider.
+
+        Returns:
+            List of BuildInfo for the provider's builds.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails.
+        """  # noqa: DOC502
+        response = await self._request("GET", f"/providers/{provider_id}/builds")
+        return [BuildInfo.model_validate(build) for build in response]
+
+    async def rollback_provider(self, provider_id: str, version: str) -> DeploymentResult:
+        """Rollback a provider to a previous build version.
+
+        Deploys the specified build version. The build must exist and
+        have status SUCCESS.
+
+        Args:
+            provider_id: Unique identifier for the provider.
+            version: CalVer version string (YYYYMMDD.HHMMSS) to rollback to.
+
+        Returns:
+            DeploymentResult with deployment state.
+
+        Raises:
+            httpx.HTTPStatusError: 404 if build not found, 400 if build not deployable.
+        """  # noqa: DOC502
+        response = await self._request(
+            "POST",
+            f"/providers/{provider_id}/rollback",
+            json_data={"version": version},
+        )
+        return DeploymentResult.model_validate(response)
+
     async def get_deployment_status(self, provider_id: str) -> DeploymentResult:
         """Get the deployment status for a provider.
 
@@ -964,3 +1061,18 @@ class AsyncPragmaClient(BaseClient):
             "DELETE", f"/providers/{provider_id}", params=params
         )
         return ProviderDeleteResult.model_validate(response)
+
+    async def list_providers(self) -> list[ProviderInfo]:
+        """List all providers for the current tenant.
+
+        Returns providers with their deployment status. Providers that have
+        been pushed but not deployed will have deployment_status=None.
+
+        Returns:
+            List of ProviderInfo with provider metadata and deployment status.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails.
+        """  # noqa: DOC502
+        response = await self._request("GET", "/providers/")
+        return [ProviderInfo.model_validate(item) for item in response]

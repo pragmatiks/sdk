@@ -17,6 +17,7 @@ Platform resource types:
 from pragma_sdk.auth import BearerAuth
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
 from pragma_sdk.models import (
+    BuildInfo,
     BuildResult,
     BuildStatus,
     Config,
@@ -28,6 +29,7 @@ from pragma_sdk.models import (
     LifecycleState,
     Outputs,
     ProviderDeleteResult,
+    ProviderInfo,
     ProviderResponse,
     PushResult,
     Resource,
@@ -46,6 +48,7 @@ from pragma_sdk.provider import Provider
 __all__ = [
     "AsyncPragmaClient",
     "BearerAuth",
+    "BuildInfo",
     "BuildResult",
     "BuildStatus",
     "Config",
@@ -61,6 +64,7 @@ __all__ = [
     "PragmaClient",
     "Provider",
     "ProviderDeleteResult",
+    "ProviderInfo",
     "ProviderResponse",
     "PushResult",
     "Resource",
