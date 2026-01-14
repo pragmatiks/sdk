@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/pragmatiks/pragmatiks/main/assets/pragmatiks_brand/wordmark/tech_readout.png" alt="Pragmatiks" width="800">
+  <img src="assets/wordmark.png" alt="Pragmatiks" width="800">
 </p>
 
 # Pragmatiks SDK
