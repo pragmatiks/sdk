@@ -96,7 +96,8 @@ class DeploymentResult(BaseModel):
         status: Current deployment status.
         available_replicas: Number of available replicas.
         ready_replicas: Number of ready replicas.
-        image: Container image reference (e.g., registry/image:version).
+        version: Deployed version (CalVer format YYYYMMDD.HHMMSS).
+        image: Container image reference (internal, may not be exposed).
         updated_at: Last update timestamp from deployment conditions.
         message: Status message or error details.
     """
@@ -105,6 +106,7 @@ class DeploymentResult(BaseModel):
     status: DeploymentStatus
     available_replicas: int = 0
     ready_replicas: int = 0
+    version: str | None = None
     image: str | None = None
     updated_at: datetime | None = None
     message: str | None = None
@@ -293,18 +295,12 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
 
     async def on_create(self) -> OutputsT:
         """Handle resource creation."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement on_create()"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement on_create()")
 
     async def on_update(self, previous_config: ConfigT) -> OutputsT:
         """Handle resource update with access to the previous configuration."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement on_update()"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement on_update()")
 
     async def on_delete(self) -> None:
         """Handle resource deletion."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement on_delete()"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement on_delete()")

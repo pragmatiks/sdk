@@ -495,7 +495,7 @@ def test_pragma_client_push_provider_returns_push_result() -> None:
         return_value=httpx.Response(
             202,
             json={
-                "build_id": "build-123",
+                "version": "20250115.120000",
                 "job_name": "build-my-provider-abc12345",
                 "status": "pending",
                 "message": "Build started",
@@ -508,7 +508,7 @@ def test_pragma_client_push_provider_returns_push_result() -> None:
 
     assert route.called
     assert isinstance(result, PushResult)
-    assert result.build_id == "build-123"
+    assert result.version == "20250115.120000"
     assert result.job_name == "build-my-provider-abc12345"
     assert result.status == BuildStatus.PENDING
     assert result.message == "Build started"
@@ -587,18 +587,44 @@ def test_pragma_client_deploy_provider_returns_deployment_result() -> None:
                 "status": "progressing",
                 "available_replicas": 0,
                 "ready_replicas": 0,
+                "version": "20250115.120000",
                 "message": "Deployment created",
             },
         )
     )
 
     with PragmaClient(auth_token=None) as client:
-        result = client.deploy_provider("my-provider", "registry.local/my-provider:abc123")
+        result = client.deploy_provider("my-provider", version="20250115.120000")
 
     assert isinstance(result, DeploymentResult)
     assert result.deployment_name == "provider-my-provider"
     assert result.status == DeploymentStatus.PROGRESSING
+    assert result.version == "20250115.120000"
     assert result.message == "Deployment created"
+
+
+@respx.mock
+def test_pragma_client_deploy_provider_without_version_deploys_latest() -> None:
+    """Deploys latest successful build when no version specified."""
+    respx.post("http://localhost:8000/providers/my-provider/deploy").mock(
+        return_value=httpx.Response(
+            202,
+            json={
+                "deployment_name": "provider-my-provider",
+                "status": "progressing",
+                "available_replicas": 0,
+                "ready_replicas": 0,
+                "version": "20250115.130000",
+                "message": "Deployment created",
+            },
+        )
+    )
+
+    with PragmaClient(auth_token=None) as client:
+        result = client.deploy_provider("my-provider")
+
+    assert isinstance(result, DeploymentResult)
+    assert result.version == "20250115.130000"
 
 
 @respx.mock
@@ -647,7 +673,7 @@ async def test_async_pragma_client_push_provider_returns_push_result() -> None:
         return_value=httpx.Response(
             202,
             json={
-                "build_id": "build-123",
+                "version": "20250115.120000",
                 "job_name": "build-my-provider-abc12345",
                 "status": "pending",
                 "message": "Build started",
@@ -660,7 +686,7 @@ async def test_async_pragma_client_push_provider_returns_push_result() -> None:
 
     assert route.called
     assert isinstance(result, PushResult)
-    assert result.build_id == "build-123"
+    assert result.version == "20250115.120000"
     assert result.job_name == "build-my-provider-abc12345"
     assert result.status == BuildStatus.PENDING
     assert result.message == "Build started"
@@ -737,17 +763,19 @@ async def test_async_pragma_client_deploy_provider_returns_deployment_result() -
                 "status": "progressing",
                 "available_replicas": 0,
                 "ready_replicas": 0,
+                "version": "20250115.120000",
                 "message": "Deployment created",
             },
         )
     )
 
     async with AsyncPragmaClient(auth_token=None) as client:
-        result = await client.deploy_provider("my-provider", "registry.local/my-provider:abc123")
+        result = await client.deploy_provider("my-provider", version="20250115.120000")
 
     assert isinstance(result, DeploymentResult)
     assert result.deployment_name == "provider-my-provider"
     assert result.status == DeploymentStatus.PROGRESSING
+    assert result.version == "20250115.120000"
 
 
 @respx.mock

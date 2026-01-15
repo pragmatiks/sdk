@@ -120,12 +120,12 @@ def test_deployment_status_values() -> None:
 def test_push_result_model() -> None:
     """PushResult stores build initiation info."""
     result = PushResult(
-        build_id="build-123",
+        version="20250115.120000",
         job_name="build-my-provider-abc12345",
         status=BuildStatus.PENDING,
         message="Build started",
     )
-    assert result.build_id == "build-123"
+    assert result.version == "20250115.120000"
     assert result.job_name == "build-my-provider-abc12345"
     assert result.status == BuildStatus.PENDING
     assert result.message == "Build started"

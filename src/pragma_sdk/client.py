@@ -92,9 +92,7 @@ class PragmaClient(BaseClient):
         See BaseClient for parameter documentation.
         """
         super().__init__(base_url, timeout, auth_token, context, require_auth)
-        self._client = httpx.Client(
-            base_url=self.base_url, timeout=self.timeout, auth=self._auth
-        )
+        self._client = httpx.Client(base_url=self.base_url, timeout=self.timeout, auth=self._auth)
 
     def __enter__(self):
         """Enter context manager.
@@ -290,9 +288,7 @@ class PragmaClient(BaseClient):
         Raises:
             httpx.HTTPStatusError: If the apply operation fails.
         """  # noqa: DOC502
-        json_data = (
-            resource.model_dump() if isinstance(resource, Resource) else resource
-        )
+        json_data = resource.model_dump() if isinstance(resource, Resource) else resource
         response = self._request("POST", "/resources/apply", json_data=json_data)
         if model is not None:
             return model.model_validate(response)
@@ -307,9 +303,7 @@ class PragmaClient(BaseClient):
         resource_id = format_resource_id(provider, resource, name)
         self._request("DELETE", f"/resources/{resource_id}")
 
-    def list_dead_letter_events(
-        self, provider: str | None = None
-    ) -> list[dict[str, Any]]:
+    def list_dead_letter_events(self, provider: str | None = None) -> list[dict[str, Any]]:
         """List dead letter events with optional provider filter.
 
         Args:
@@ -374,9 +368,7 @@ class PragmaClient(BaseClient):
         """  # noqa: DOC502
         self._request("DELETE", f"/ops/dead-letter/{event_id}")
 
-    def delete_dead_letter_events(
-        self, provider: str | None = None, *, all: bool = False
-    ) -> int:
+    def delete_dead_letter_events(self, provider: str | None = None, *, all: bool = False) -> int:
         """Delete multiple dead letter events.
 
         Args:
@@ -441,9 +433,7 @@ class PragmaClient(BaseClient):
         response = self._request("GET", f"/providers/{provider_id}/builds/{job_name}")
         return BuildResult.model_validate(response)
 
-    def stream_build_logs(
-        self, provider_id: str, job_name: str
-    ) -> AbstractContextManager[httpx.Response]:
+    def stream_build_logs(self, provider_id: str, job_name: str) -> AbstractContextManager[httpx.Response]:
         """Stream logs from a build job.
 
         Returns a streaming response for real-time monitoring of build progress.
@@ -464,29 +454,32 @@ class PragmaClient(BaseClient):
             ...     for line in response.iter_lines():
             ...         print(line)
         """  # noqa: DOC502
-        return self._client.stream(
-            "GET", f"/providers/{provider_id}/builds/{job_name}/logs"
-        )
+        return self._client.stream("GET", f"/providers/{provider_id}/builds/{job_name}/logs")
 
-    def deploy_provider(self, provider_id: str, image: str) -> DeploymentResult:
-        """Deploy a provider from a built container image.
+    def deploy_provider(
+        self, provider_id: str, version: str | None = None
+    ) -> DeploymentResult:
+        """Deploy a provider to a specific version.
 
         Creates or updates the Kubernetes Deployment for the provider.
+        If no version is specified, deploys the latest successful build.
 
         Args:
             provider_id: Unique identifier for the provider.
-            image: Full container image reference (e.g., registry/image:tag).
+            version: CalVer version string (YYYYMMDD.HHMMSS) to deploy.
+                If None, deploys the latest successful build.
 
         Returns:
-            DeploymentResult with initial deployment state.
+            DeploymentResult with deployment state including deployed version.
 
         Raises:
-            httpx.HTTPStatusError: If deployment fails.
+            httpx.HTTPStatusError: 404 if version not found or no deployable build exists.
         """  # noqa: DOC502
+        json_data = {"version": version} if version else {}
         response = self._request(
             "POST",
             f"/providers/{provider_id}/deploy",
-            json_data={"image": image},
+            json_data=json_data,
         )
         return DeploymentResult.model_validate(response)
 
@@ -545,9 +538,7 @@ class PragmaClient(BaseClient):
         response = self._request("GET", f"/providers/{provider_id}/deployment")
         return DeploymentResult.model_validate(response)
 
-    def delete_provider(
-        self, provider_id: str, *, cascade: bool = False
-    ) -> ProviderDeleteResult:
+    def delete_provider(self, provider_id: str, *, cascade: bool = False) -> ProviderDeleteResult:
         """Delete a provider and all associated resources.
 
         Removes the provider deployment, resource definitions, and pending events.
@@ -606,9 +597,7 @@ class AsyncPragmaClient(BaseClient):
         See BaseClient for parameter documentation.
         """
         super().__init__(base_url, timeout, auth_token, context, require_auth)
-        self._client = httpx.AsyncClient(
-            base_url=self.base_url, timeout=self.timeout, auth=self._auth
-        )
+        self._client = httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout, auth=self._auth)
 
     async def __aenter__(self):
         """Enter async context manager.
@@ -793,9 +782,7 @@ class AsyncPragmaClient(BaseClient):
         Raises:
             httpx.HTTPStatusError: If the apply operation fails.
         """  # noqa: DOC502
-        json_data = (
-            resource.model_dump() if isinstance(resource, Resource) else resource
-        )
+        json_data = resource.model_dump() if isinstance(resource, Resource) else resource
         response = await self._request("POST", "/resources/apply", json_data=json_data)
         if model is not None:
             return model.model_validate(response)
@@ -810,9 +797,7 @@ class AsyncPragmaClient(BaseClient):
         resource_id = format_resource_id(provider, resource, name)
         await self._request("DELETE", f"/resources/{resource_id}")
 
-    async def list_dead_letter_events(
-        self, provider: str | None = None
-    ) -> list[dict[str, Any]]:
+    async def list_dead_letter_events(self, provider: str | None = None) -> list[dict[str, Any]]:
         """List dead letter events with optional provider filter.
 
         Args:
@@ -877,9 +862,7 @@ class AsyncPragmaClient(BaseClient):
         """  # noqa: DOC502
         await self._request("DELETE", f"/ops/dead-letter/{event_id}")
 
-    async def delete_dead_letter_events(
-        self, provider: str | None = None, *, all: bool = False
-    ) -> int:
+    async def delete_dead_letter_events(self, provider: str | None = None, *, all: bool = False) -> int:
         """Delete multiple dead letter events.
 
         Args:
@@ -941,14 +924,10 @@ class AsyncPragmaClient(BaseClient):
         Raises:
             httpx.HTTPStatusError: If build job not found or request fails.
         """  # noqa: DOC502
-        response = await self._request(
-            "GET", f"/providers/{provider_id}/builds/{job_name}"
-        )
+        response = await self._request("GET", f"/providers/{provider_id}/builds/{job_name}")
         return BuildResult.model_validate(response)
 
-    def stream_build_logs(
-        self, provider_id: str, job_name: str
-    ) -> AbstractAsyncContextManager[httpx.Response]:
+    def stream_build_logs(self, provider_id: str, job_name: str) -> AbstractAsyncContextManager[httpx.Response]:
         """Stream logs from a build job.
 
         Returns a streaming response for real-time monitoring of build progress.
@@ -969,29 +948,32 @@ class AsyncPragmaClient(BaseClient):
             ...     async for line in response.aiter_lines():
             ...         print(line)
         """  # noqa: DOC502
-        return self._client.stream(
-            "GET", f"/providers/{provider_id}/builds/{job_name}/logs"
-        )
+        return self._client.stream("GET", f"/providers/{provider_id}/builds/{job_name}/logs")
 
-    async def deploy_provider(self, provider_id: str, image: str) -> DeploymentResult:
-        """Deploy a provider from a built container image.
+    async def deploy_provider(
+        self, provider_id: str, version: str | None = None
+    ) -> DeploymentResult:
+        """Deploy a provider to a specific version.
 
         Creates or updates the Kubernetes Deployment for the provider.
+        If no version is specified, deploys the latest successful build.
 
         Args:
             provider_id: Unique identifier for the provider.
-            image: Full container image reference (e.g., registry/image:tag).
+            version: CalVer version string (YYYYMMDD.HHMMSS) to deploy.
+                If None, deploys the latest successful build.
 
         Returns:
-            DeploymentResult with initial deployment state.
+            DeploymentResult with deployment state including deployed version.
 
         Raises:
-            httpx.HTTPStatusError: If deployment fails.
+            httpx.HTTPStatusError: 404 if version not found or no deployable build exists.
         """  # noqa: DOC502
+        json_data = {"version": version} if version else {}
         response = await self._request(
             "POST",
             f"/providers/{provider_id}/deploy",
-            json_data={"image": image},
+            json_data=json_data,
         )
         return DeploymentResult.model_validate(response)
 
@@ -1050,9 +1032,7 @@ class AsyncPragmaClient(BaseClient):
         response = await self._request("GET", f"/providers/{provider_id}/deployment")
         return DeploymentResult.model_validate(response)
 
-    async def delete_provider(
-        self, provider_id: str, *, cascade: bool = False
-    ) -> ProviderDeleteResult:
+    async def delete_provider(self, provider_id: str, *, cascade: bool = False) -> ProviderDeleteResult:
         """Delete a provider and all associated resources.
 
         Removes the provider deployment, resource definitions, and pending events.
@@ -1070,9 +1050,7 @@ class AsyncPragmaClient(BaseClient):
             httpx.HTTPStatusError: If provider has resources (409) or deletion fails.
         """  # noqa: DOC502
         params = {"cascade": "true"} if cascade else {}
-        response = await self._request(
-            "DELETE", f"/providers/{provider_id}", params=params
-        )
+        response = await self._request("DELETE", f"/providers/{provider_id}", params=params)
         return ProviderDeleteResult.model_validate(response)
 
     async def list_providers(self) -> list[ProviderInfo]:
