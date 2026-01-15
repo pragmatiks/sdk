@@ -2,17 +2,17 @@
   <img src="assets/wordmark.png" alt="Pragmatiks" width="800">
 </p>
 
-# Pragmatiks SDK
+# Pragma SDK
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pragmatiks/sdk)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pragmatiks/pragma-sdk)
 [![PyPI version](https://img.shields.io/pypi/v/pragmatiks-sdk.svg)](https://pypi.org/project/pragmatiks-sdk/)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-**[Documentation](https://docs.pragmatiks.io/sdk/overview)** | **[CLI](https://github.com/pragmatiks/cli)** | **[Providers](https://github.com/pragmatiks/providers)**
+**[Documentation](https://docs.pragmatiks.io/sdk/overview)** | **[CLI](https://github.com/pragmatiks/pragma-cli)** | **[Providers](https://github.com/pragmatiks/pragma-providers)**
 
-Build providers and interact with the Pragmatiks platform programmatically.
+Build providers and interact with the pragma-os platform programmatically.
 
 ## Quick Start
 
