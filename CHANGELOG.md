@@ -1,3 +1,9 @@
+## v0.10.2 (2026-01-15)
+
+### Refactor
+
+- hide internal details from API responses
+
 ## v0.10.1 (2026-01-15)
 
 ### Refactor
