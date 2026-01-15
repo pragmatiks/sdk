@@ -11,7 +11,6 @@ from pragma_sdk.client import AsyncPragmaClient, PragmaClient
 from pragma_sdk.models import (
     BuildResult,
     BuildStatus,
-    DeploymentResult,
     DeploymentStatus,
     LifecycleState,
     ProviderStatus,
@@ -497,7 +496,6 @@ def test_pragma_client_push_provider_returns_push_result() -> None:
             202,
             json={
                 "version": "20250115.120000",
-                "job_name": "build-my-provider-abc12345",
                 "status": "pending",
                 "message": "Build started",
             },
@@ -510,7 +508,6 @@ def test_pragma_client_push_provider_returns_push_result() -> None:
     assert route.called
     assert isinstance(result, PushResult)
     assert result.version == "20250115.120000"
-    assert result.job_name == "build-my-provider-abc12345"
     assert result.status == BuildStatus.PENDING
     assert result.message == "Build started"
 
@@ -518,78 +515,72 @@ def test_pragma_client_push_provider_returns_push_result() -> None:
 @respx.mock
 def test_pragma_client_get_build_status_returns_build_result() -> None:
     """Returns BuildResult with build status."""
-    respx.get("http://localhost:8000/providers/my-provider/builds/build-job-123").mock(
+    respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
-                "job_name": "build-job-123",
+                "version": "20250115.120000",
                 "status": "success",
-                "image": "registry.local/my-provider:abc123",
                 "error_message": None,
             },
         )
     )
 
     with PragmaClient(auth_token=None) as client:
-        result = client.get_build_status("my-provider", "build-job-123")
+        result = client.get_build_status("my-provider", "20250115.120000")
 
     assert isinstance(result, BuildResult)
-    assert result.job_name == "build-job-123"
+    assert result.version == "20250115.120000"
     assert result.status == BuildStatus.SUCCESS
-    assert result.image == "registry.local/my-provider:abc123"
     assert result.error_message is None
 
 
 @respx.mock
 def test_pragma_client_get_build_status_returns_failed_build() -> None:
     """Returns BuildResult with error message on failed build."""
-    respx.get("http://localhost:8000/providers/my-provider/builds/build-job-456").mock(
+    respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
-                "job_name": "build-job-456",
+                "version": "20250115.120000",
                 "status": "failed",
-                "image": None,
                 "error_message": "Dockerfile syntax error",
             },
         )
     )
 
     with PragmaClient(auth_token=None) as client:
-        result = client.get_build_status("my-provider", "build-job-456")
+        result = client.get_build_status("my-provider", "20250115.120000")
 
     assert result.status == BuildStatus.FAILED
     assert result.error_message == "Dockerfile syntax error"
-    assert result.image is None
 
 
 @respx.mock
 def test_pragma_client_get_build_status_raises_on_not_found() -> None:
-    """Raises HTTPStatusError when build job not found."""
-    respx.get("http://localhost:8000/providers/my-provider/builds/nonexistent").mock(
-        return_value=httpx.Response(404, json={"detail": "Build job not found"})
+    """Raises HTTPStatusError when build not found."""
+    respx.get("http://localhost:8000/providers/my-provider/builds/20250115.999999").mock(
+        return_value=httpx.Response(404, json={"detail": "Build not found"})
     )
 
     with PragmaClient(auth_token=None) as client:
         with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            client.get_build_status("my-provider", "nonexistent")
+            client.get_build_status("my-provider", "20250115.999999")
 
     assert exc_info.value.response.status_code == 404
 
 
 @respx.mock
-def test_pragma_client_deploy_provider_returns_deployment_result() -> None:
-    """Returns DeploymentResult on successful deploy."""
+def test_pragma_client_deploy_provider_returns_provider_status() -> None:
+    """Returns ProviderStatus on successful deploy."""
     respx.post("http://localhost:8000/providers/my-provider/deploy").mock(
         return_value=httpx.Response(
             202,
             json={
-                "deployment_name": "provider-my-provider",
                 "status": "progressing",
-                "available_replicas": 0,
-                "ready_replicas": 0,
                 "version": "20250115.120000",
-                "message": "Deployment created",
+                "updated_at": None,
+                "healthy": False,
             },
         )
     )
@@ -597,11 +588,10 @@ def test_pragma_client_deploy_provider_returns_deployment_result() -> None:
     with PragmaClient(auth_token=None) as client:
         result = client.deploy_provider("my-provider", version="20250115.120000")
 
-    assert isinstance(result, DeploymentResult)
-    assert result.deployment_name == "provider-my-provider"
+    assert isinstance(result, ProviderStatus)
     assert result.status == DeploymentStatus.PROGRESSING
     assert result.version == "20250115.120000"
-    assert result.message == "Deployment created"
+    assert result.healthy is False
 
 
 @respx.mock
@@ -611,12 +601,10 @@ def test_pragma_client_deploy_provider_without_version_deploys_latest() -> None:
         return_value=httpx.Response(
             202,
             json={
-                "deployment_name": "provider-my-provider",
                 "status": "progressing",
-                "available_replicas": 0,
-                "ready_replicas": 0,
                 "version": "20250115.130000",
-                "message": "Deployment created",
+                "updated_at": None,
+                "healthy": False,
             },
         )
     )
@@ -624,7 +612,7 @@ def test_pragma_client_deploy_provider_without_version_deploys_latest() -> None:
     with PragmaClient(auth_token=None) as client:
         result = client.deploy_provider("my-provider")
 
-    assert isinstance(result, DeploymentResult)
+    assert isinstance(result, ProviderStatus)
     assert result.version == "20250115.130000"
 
 
@@ -674,7 +662,6 @@ async def test_async_pragma_client_push_provider_returns_push_result() -> None:
             202,
             json={
                 "version": "20250115.120000",
-                "job_name": "build-my-provider-abc12345",
                 "status": "pending",
                 "message": "Build started",
             },
@@ -687,7 +674,6 @@ async def test_async_pragma_client_push_provider_returns_push_result() -> None:
     assert route.called
     assert isinstance(result, PushResult)
     assert result.version == "20250115.120000"
-    assert result.job_name == "build-my-provider-abc12345"
     assert result.status == BuildStatus.PENDING
     assert result.message == "Build started"
 
@@ -695,44 +681,42 @@ async def test_async_pragma_client_push_provider_returns_push_result() -> None:
 @respx.mock
 async def test_async_pragma_client_get_build_status_returns_build_result() -> None:
     """Returns BuildResult with build status."""
-    respx.get("http://localhost:8000/providers/my-provider/builds/build-job-123").mock(
+    respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
-                "job_name": "build-job-123",
+                "version": "20250115.120000",
                 "status": "success",
-                "image": "registry.local/my-provider:abc123",
                 "error_message": None,
             },
         )
     )
 
     async with AsyncPragmaClient(auth_token=None) as client:
-        result = await client.get_build_status("my-provider", "build-job-123")
+        result = await client.get_build_status("my-provider", "20250115.120000")
 
     assert isinstance(result, BuildResult)
-    assert result.job_name == "build-job-123"
+    assert result.version == "20250115.120000"
     assert result.status == BuildStatus.SUCCESS
-    assert result.image == "registry.local/my-provider:abc123"
+    assert result.error_message is None
 
 
 @respx.mock
 async def test_async_pragma_client_get_build_status_returns_failed_build() -> None:
     """Returns BuildResult with error message on failed build."""
-    respx.get("http://localhost:8000/providers/my-provider/builds/build-job-456").mock(
+    respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
-                "job_name": "build-job-456",
+                "version": "20250115.120000",
                 "status": "failed",
-                "image": None,
                 "error_message": "Dockerfile syntax error",
             },
         )
     )
 
     async with AsyncPragmaClient(auth_token=None) as client:
-        result = await client.get_build_status("my-provider", "build-job-456")
+        result = await client.get_build_status("my-provider", "20250115.120000")
 
     assert result.status == BuildStatus.FAILED
     assert result.error_message == "Dockerfile syntax error"
@@ -740,31 +724,29 @@ async def test_async_pragma_client_get_build_status_returns_failed_build() -> No
 
 @respx.mock
 async def test_async_pragma_client_get_build_status_raises_on_not_found() -> None:
-    """Raises HTTPStatusError when build job not found."""
-    respx.get("http://localhost:8000/providers/my-provider/builds/nonexistent").mock(
-        return_value=httpx.Response(404, json={"detail": "Build job not found"})
+    """Raises HTTPStatusError when build not found."""
+    respx.get("http://localhost:8000/providers/my-provider/builds/20250115.999999").mock(
+        return_value=httpx.Response(404, json={"detail": "Build not found"})
     )
 
     async with AsyncPragmaClient(auth_token=None) as client:
         with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await client.get_build_status("my-provider", "nonexistent")
+            await client.get_build_status("my-provider", "20250115.999999")
 
     assert exc_info.value.response.status_code == 404
 
 
 @respx.mock
-async def test_async_pragma_client_deploy_provider_returns_deployment_result() -> None:
-    """Returns DeploymentResult on successful deploy."""
+async def test_async_pragma_client_deploy_provider_returns_provider_status() -> None:
+    """Returns ProviderStatus on successful deploy."""
     respx.post("http://localhost:8000/providers/my-provider/deploy").mock(
         return_value=httpx.Response(
             202,
             json={
-                "deployment_name": "provider-my-provider",
                 "status": "progressing",
-                "available_replicas": 0,
-                "ready_replicas": 0,
                 "version": "20250115.120000",
-                "message": "Deployment created",
+                "updated_at": None,
+                "healthy": False,
             },
         )
     )
@@ -772,10 +754,10 @@ async def test_async_pragma_client_deploy_provider_returns_deployment_result() -
     async with AsyncPragmaClient(auth_token=None) as client:
         result = await client.deploy_provider("my-provider", version="20250115.120000")
 
-    assert isinstance(result, DeploymentResult)
-    assert result.deployment_name == "provider-my-provider"
+    assert isinstance(result, ProviderStatus)
     assert result.status == DeploymentStatus.PROGRESSING
     assert result.version == "20250115.120000"
+    assert result.healthy is False
 
 
 @respx.mock

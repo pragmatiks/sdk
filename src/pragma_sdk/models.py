@@ -43,13 +43,11 @@ class PushResult(BaseModel):
 
     Attributes:
         version: CalVer version for the build (YYYYMMDD.HHMMSS).
-        job_name: Name of the Cloud Build job.
         status: Initial build status (typically pending).
         message: Status message from the API.
     """
 
     version: str
-    job_name: str
     status: BuildStatus
     message: str
 
@@ -58,15 +56,13 @@ class BuildResult(BaseModel):
     """Result of a build status query.
 
     Attributes:
-        job_name: Name of the Kubernetes Job.
+        version: CalVer version string for the build.
         status: Current build status.
-        image: Full image reference (set on success).
         error_message: Error message (set on failure).
     """
 
-    job_name: str
+    version: str
     status: BuildStatus
-    image: str | None = None
     error_message: str | None = None
 
 

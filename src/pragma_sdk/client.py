@@ -418,46 +418,46 @@ class PragmaClient(BaseClient):
         )
         return PushResult.model_validate(response)
 
-    def get_build_status(self, provider_id: str, job_name: str) -> BuildResult:
-        """Get the status of a build job.
+    def get_build_status(self, provider_id: str, version: str) -> BuildResult:
+        """Get the status of a build by version.
 
         Args:
             provider_id: Provider identifier.
-            job_name: Name of the BuildKit job.
+            version: CalVer version string (YYYYMMDD.HHMMSS).
 
         Returns:
             BuildResult with current build state.
 
         Raises:
-            httpx.HTTPStatusError: If build job not found or request fails.
+            httpx.HTTPStatusError: If build not found or request fails.
         """  # noqa: DOC502
-        response = self._request("GET", f"/providers/{provider_id}/builds/{job_name}")
+        response = self._request("GET", f"/providers/{provider_id}/builds/{version}")
         return BuildResult.model_validate(response)
 
-    def stream_build_logs(self, provider_id: str, job_name: str) -> AbstractContextManager[httpx.Response]:
-        """Stream logs from a build job.
+    def stream_build_logs(self, provider_id: str, version: str) -> AbstractContextManager[httpx.Response]:
+        """Stream logs from a build.
 
         Returns a streaming response for real-time monitoring of build progress.
         The caller is responsible for iterating over the response and closing it.
 
         Args:
             provider_id: Provider identifier.
-            job_name: Name of the BuildKit job.
+            version: CalVer version string (YYYYMMDD.HHMMSS).
 
         Returns:
             Context manager yielding httpx.Response with build logs (text/plain).
 
         Raises:
-            httpx.HTTPStatusError: If build job not found or request fails.
+            httpx.HTTPStatusError: If build not found or request fails.
 
         Example:
-            >>> with client.stream_build_logs("my-provider", "build-job-123") as response:
+            >>> with client.stream_build_logs("my-provider", "20250115.120000") as response:
             ...     for line in response.iter_lines():
             ...         print(line)
         """  # noqa: DOC502
-        return self._client.stream("GET", f"/providers/{provider_id}/builds/{job_name}/logs")
+        return self._client.stream("GET", f"/providers/{provider_id}/builds/{version}/logs")
 
-    def deploy_provider(self, provider_id: str, version: str | None = None) -> DeploymentResult:
+    def deploy_provider(self, provider_id: str, version: str | None = None) -> ProviderStatus:
         """Deploy a provider to a specific version.
 
         Creates or updates the Kubernetes Deployment for the provider.
@@ -469,7 +469,7 @@ class PragmaClient(BaseClient):
                 If None, deploys the latest successful build.
 
         Returns:
-            DeploymentResult with deployment state including deployed version.
+            ProviderStatus with status, version, updated_at, and healthy flag.
 
         Raises:
             httpx.HTTPStatusError: 404 if version not found or no deployable build exists.
@@ -480,7 +480,7 @@ class PragmaClient(BaseClient):
             f"/providers/{provider_id}/deploy",
             json_data=json_data,
         )
-        return DeploymentResult.model_validate(response)
+        return ProviderStatus.model_validate(response)
 
     def list_builds(self, provider_id: str) -> list[BuildInfo]:
         """List builds for a provider.
@@ -913,46 +913,46 @@ class AsyncPragmaClient(BaseClient):
         )
         return PushResult.model_validate(response)
 
-    async def get_build_status(self, provider_id: str, job_name: str) -> BuildResult:
-        """Get the status of a build job.
+    async def get_build_status(self, provider_id: str, version: str) -> BuildResult:
+        """Get the status of a build by version.
 
         Args:
             provider_id: Provider identifier.
-            job_name: Name of the BuildKit job.
+            version: CalVer version string (YYYYMMDD.HHMMSS).
 
         Returns:
             BuildResult with current build state.
 
         Raises:
-            httpx.HTTPStatusError: If build job not found or request fails.
+            httpx.HTTPStatusError: If build not found or request fails.
         """  # noqa: DOC502
-        response = await self._request("GET", f"/providers/{provider_id}/builds/{job_name}")
+        response = await self._request("GET", f"/providers/{provider_id}/builds/{version}")
         return BuildResult.model_validate(response)
 
-    def stream_build_logs(self, provider_id: str, job_name: str) -> AbstractAsyncContextManager[httpx.Response]:
-        """Stream logs from a build job.
+    def stream_build_logs(self, provider_id: str, version: str) -> AbstractAsyncContextManager[httpx.Response]:
+        """Stream logs from a build.
 
         Returns a streaming response for real-time monitoring of build progress.
         The caller is responsible for iterating over the response and closing it.
 
         Args:
             provider_id: Provider identifier.
-            job_name: Name of the BuildKit job.
+            version: CalVer version string (YYYYMMDD.HHMMSS).
 
         Returns:
             Async context manager yielding httpx.Response with build logs (text/plain).
 
         Raises:
-            httpx.HTTPStatusError: If build job not found or request fails.
+            httpx.HTTPStatusError: If build not found or request fails.
 
         Example:
-            >>> async with client.stream_build_logs("my-provider", "build-job-123") as response:
+            >>> async with client.stream_build_logs("my-provider", "20250115.120000") as response:
             ...     async for line in response.aiter_lines():
             ...         print(line)
         """  # noqa: DOC502
-        return self._client.stream("GET", f"/providers/{provider_id}/builds/{job_name}/logs")
+        return self._client.stream("GET", f"/providers/{provider_id}/builds/{version}/logs")
 
-    async def deploy_provider(self, provider_id: str, version: str | None = None) -> DeploymentResult:
+    async def deploy_provider(self, provider_id: str, version: str | None = None) -> ProviderStatus:
         """Deploy a provider to a specific version.
 
         Creates or updates the Kubernetes Deployment for the provider.
@@ -964,7 +964,7 @@ class AsyncPragmaClient(BaseClient):
                 If None, deploys the latest successful build.
 
         Returns:
-            DeploymentResult with deployment state including deployed version.
+            ProviderStatus with status, version, updated_at, and healthy flag.
 
         Raises:
             httpx.HTTPStatusError: 404 if version not found or no deployable build exists.
@@ -975,7 +975,7 @@ class AsyncPragmaClient(BaseClient):
             f"/providers/{provider_id}/deploy",
             json_data=json_data,
         )
-        return DeploymentResult.model_validate(response)
+        return ProviderStatus.model_validate(response)
 
     async def list_builds(self, provider_id: str) -> list[BuildInfo]:
         """List builds for a provider.

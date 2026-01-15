@@ -121,12 +121,10 @@ def test_push_result_model() -> None:
     """PushResult stores build initiation info."""
     result = PushResult(
         version="20250115.120000",
-        job_name="build-my-provider-abc12345",
         status=BuildStatus.PENDING,
         message="Build started",
     )
     assert result.version == "20250115.120000"
-    assert result.job_name == "build-my-provider-abc12345"
     assert result.status == BuildStatus.PENDING
     assert result.message == "Build started"
 
@@ -134,25 +132,24 @@ def test_push_result_model() -> None:
 def test_build_result_success() -> None:
     """BuildResult stores successful build info."""
     result = BuildResult(
-        job_name="build-job-123",
+        version="20250115.120000",
         status=BuildStatus.SUCCESS,
-        image="registry.local/my-provider:abc123",
     )
+    assert result.version == "20250115.120000"
     assert result.status == BuildStatus.SUCCESS
-    assert result.image == "registry.local/my-provider:abc123"
     assert result.error_message is None
 
 
 def test_build_result_failure() -> None:
     """BuildResult stores failed build info."""
     result = BuildResult(
-        job_name="build-job-456",
+        version="20250115.120000",
         status=BuildStatus.FAILED,
         error_message="Dockerfile syntax error",
     )
+    assert result.version == "20250115.120000"
     assert result.status == BuildStatus.FAILED
     assert result.error_message == "Dockerfile syntax error"
-    assert result.image is None
 
 
 def test_deployment_result_available() -> None:
