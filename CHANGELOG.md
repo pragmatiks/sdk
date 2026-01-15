@@ -1,3 +1,9 @@
+## v0.10.3 (2026-01-15)
+
+### Refactor
+
+- use BuildInfo for build status responses
+
 ## v0.10.2 (2026-01-15)
 
 ### Refactor
