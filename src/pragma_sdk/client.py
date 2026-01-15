@@ -457,9 +457,7 @@ class PragmaClient(BaseClient):
         """  # noqa: DOC502
         return self._client.stream("GET", f"/providers/{provider_id}/builds/{job_name}/logs")
 
-    def deploy_provider(
-        self, provider_id: str, version: str | None = None
-    ) -> DeploymentResult:
+    def deploy_provider(self, provider_id: str, version: str | None = None) -> DeploymentResult:
         """Deploy a provider to a specific version.
 
         Creates or updates the Kubernetes Deployment for the provider.
@@ -954,9 +952,7 @@ class AsyncPragmaClient(BaseClient):
         """  # noqa: DOC502
         return self._client.stream("GET", f"/providers/{provider_id}/builds/{job_name}/logs")
 
-    async def deploy_provider(
-        self, provider_id: str, version: str | None = None
-    ) -> DeploymentResult:
+    async def deploy_provider(self, provider_id: str, version: str | None = None) -> DeploymentResult:
         """Deploy a provider to a specific version.
 
         Creates or updates the Kubernetes Deployment for the provider.

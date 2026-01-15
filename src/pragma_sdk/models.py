@@ -150,31 +150,19 @@ class ProviderInfo(BaseModel):
 
 
 class ProviderDeleteResult(BaseModel):
-    """Result of a provider delete operation.
+    """User-facing result of a provider delete operation.
+
+    Minimal representation without internal infrastructure details.
 
     Attributes:
         provider_id: Provider that was deleted.
-        deployment_deleted: Whether the Kubernetes deployment was deleted.
-        builds_cancelled: Number of Cloud Build jobs cancelled.
-        source_archives_deleted: Number of GCS source archives deleted.
-        resources_deleted: Number of resources deleted (if cascade).
-        resource_definitions_deleted: Number of resource definitions deleted.
-        outbox_events_deleted: Number of outbox events deleted.
-        dead_letter_events_deleted: Number of dead letter events deleted.
-        messages_purged: Number of NATS messages purged from the event stream.
-        consumer_deleted: Whether the NATS durable consumer was deleted.
+        deployment_deleted: Whether the running deployment was removed.
+        resources_deleted: Number of resources deleted (if cascade was used).
     """
 
     provider_id: str
     deployment_deleted: bool = False
-    builds_cancelled: int = 0
-    source_archives_deleted: int = 0
     resources_deleted: int = 0
-    resource_definitions_deleted: int = 0
-    outbox_events_deleted: int = 0
-    dead_letter_events_deleted: int = 0
-    messages_purged: int = 0
-    consumer_deleted: bool = False
 
 
 class UserInfo(BaseModel):
