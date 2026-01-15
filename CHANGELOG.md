@@ -1,3 +1,9 @@
+## v0.10.0 (2026-01-15)
+
+### Feat
+
+- add ProviderStatus model with minimal user-facing fields
+
 ## v0.9.0 (2026-01-15)
 
 ### Feat
