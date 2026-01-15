@@ -1,3 +1,9 @@
+## v0.10.1 (2026-01-15)
+
+### Refactor
+
+- simplify ProviderDeleteResult to hide internal details
+
 ## v0.10.0 (2026-01-15)
 
 ### Feat
