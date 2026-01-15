@@ -1,3 +1,9 @@
+## v0.8.0 (2026-01-15)
+
+### Feat
+
+- **provider**: add schema extraction module
+
 ## v0.7.0 (2026-01-15)
 
 ### Feat
