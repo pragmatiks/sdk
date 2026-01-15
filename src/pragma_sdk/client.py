@@ -19,6 +19,7 @@ from pragma_sdk.models import (
     PushResult,
     Resource,
     ResourceDefinition,
+    UserInfo,
     format_resource_id,
 )
 
@@ -153,6 +154,18 @@ class PragmaClient(BaseClient):
             return response.get("status") == "ok"
         except httpx.HTTPError:
             return False
+
+    def get_me(self) -> UserInfo:
+        """Get current authenticated user information.
+
+        Returns:
+            UserInfo with user ID, email, organization ID and name.
+
+        Raises:
+            httpx.HTTPStatusError: If not authenticated or API call fails.
+        """
+        response = self._request("GET", "/auth/me")
+        return UserInfo.model_validate(response)
 
     def register_resource(
         self,

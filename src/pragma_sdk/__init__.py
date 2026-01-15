@@ -35,6 +35,7 @@ from pragma_sdk.models import (
     Resource,
     ResourceReference,
     ResponseStatus,
+    UserInfo,
     format_resource_id,
 )
 from pragma_sdk.platform import (
@@ -72,4 +73,5 @@ __all__ = [
     "ResponseStatus",
     "SecretConfig",
     "SecretOutputs",
+    "UserInfo",
 ]

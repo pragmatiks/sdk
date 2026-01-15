@@ -154,6 +154,22 @@ class ProviderDeleteResult(BaseModel):
     consumer_deleted: bool = False
 
 
+class UserInfo(BaseModel):
+    """Current user information from authentication.
+
+    Attributes:
+        user_id: Unique identifier from Clerk authentication.
+        email: User's primary email address (None if not set).
+        organization_id: Clerk organization identifier.
+        organization_name: Name of the user's organization (None if not available).
+    """
+
+    user_id: str
+    email: str | None = None
+    organization_id: str
+    organization_name: str | None = None
+
+
 class EventType(StrEnum):
     """Resource lifecycle event type: CREATE, UPDATE, or DELETE."""
 
