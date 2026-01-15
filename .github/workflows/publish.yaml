@@ -91,7 +91,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh workflow run update-sdk.yaml \
-            --repo pragmatiks/providers \
+            --repo pragmatiks/pragma-providers \
             --field sdk_version=${{ steps.bump.outputs.version }}
 
       - name: Trigger CLI update
@@ -100,5 +100,5 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh workflow run update-sdk.yaml \
-            --repo pragmatiks/cli \
+            --repo pragmatiks/pragma-cli \
             --field sdk_version=${{ steps.bump.outputs.version }}
