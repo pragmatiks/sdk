@@ -1,3 +1,9 @@
+## v0.9.0 (2026-01-15)
+
+### Feat
+
+- **sdk**: change deploy_provider to accept version instead of image
+
 ## v0.8.0 (2026-01-15)
 
 ### Feat
