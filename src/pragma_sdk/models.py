@@ -89,7 +89,9 @@ class BuildInfo(BaseModel):
 
 
 class DeploymentResult(BaseModel):
-    """Result of a deployment status query.
+    """Result of a deployment operation (deploy/rollback).
+
+    Contains internal K8s details needed for deployment commands.
 
     Attributes:
         deployment_name: Name of the Kubernetes Deployment.
@@ -110,6 +112,25 @@ class DeploymentResult(BaseModel):
     image: str | None = None
     updated_at: datetime | None = None
     message: str | None = None
+
+
+class ProviderStatus(BaseModel):
+    """User-facing provider deployment status.
+
+    Minimal representation without internal K8s details like replica
+    counts, deployment names, or container images.
+
+    Attributes:
+        status: Current deployment status.
+        version: CalVer version string of deployed build.
+        updated_at: Last update timestamp.
+        healthy: Whether the provider is healthy (available with ready replicas).
+    """
+
+    status: DeploymentStatus
+    version: str | None = None
+    updated_at: datetime | None = None
+    healthy: bool = False
 
 
 class ProviderInfo(BaseModel):

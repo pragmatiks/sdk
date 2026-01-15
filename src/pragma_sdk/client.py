@@ -16,6 +16,7 @@ from pragma_sdk.models import (
     DeploymentResult,
     ProviderDeleteResult,
     ProviderInfo,
+    ProviderStatus,
     PushResult,
     Resource,
     ResourceDefinition,
@@ -523,20 +524,23 @@ class PragmaClient(BaseClient):
         )
         return DeploymentResult.model_validate(response)
 
-    def get_deployment_status(self, provider_id: str) -> DeploymentResult:
+    def get_deployment_status(self, provider_id: str) -> ProviderStatus:
         """Get the deployment status for a provider.
+
+        Returns a minimal status without internal K8s details like replica
+        counts, deployment names, or container images.
 
         Args:
             provider_id: Unique identifier for the provider.
 
         Returns:
-            DeploymentResult with current deployment state.
+            ProviderStatus with status, version, updated_at, and healthy flag.
 
         Raises:
             httpx.HTTPStatusError: If deployment not found or request fails.
         """  # noqa: DOC502
         response = self._request("GET", f"/providers/{provider_id}/deployment")
-        return DeploymentResult.model_validate(response)
+        return ProviderStatus.model_validate(response)
 
     def delete_provider(self, provider_id: str, *, cascade: bool = False) -> ProviderDeleteResult:
         """Delete a provider and all associated resources.
@@ -1017,20 +1021,23 @@ class AsyncPragmaClient(BaseClient):
         )
         return DeploymentResult.model_validate(response)
 
-    async def get_deployment_status(self, provider_id: str) -> DeploymentResult:
+    async def get_deployment_status(self, provider_id: str) -> ProviderStatus:
         """Get the deployment status for a provider.
+
+        Returns a minimal status without internal K8s details like replica
+        counts, deployment names, or container images.
 
         Args:
             provider_id: Unique identifier for the provider.
 
         Returns:
-            DeploymentResult with current deployment state.
+            ProviderStatus with status, version, updated_at, and healthy flag.
 
         Raises:
             httpx.HTTPStatusError: If deployment not found or request fails.
         """  # noqa: DOC502
         response = await self._request("GET", f"/providers/{provider_id}/deployment")
-        return DeploymentResult.model_validate(response)
+        return ProviderStatus.model_validate(response)
 
     async def delete_provider(self, provider_id: str, *, cascade: bool = False) -> ProviderDeleteResult:
         """Delete a provider and all associated resources.

@@ -14,6 +14,7 @@ from pragma_sdk.models import (
     DeploymentResult,
     DeploymentStatus,
     LifecycleState,
+    ProviderStatus,
     PushResult,
     ResourceDefinition,
 )
@@ -628,17 +629,16 @@ def test_pragma_client_deploy_provider_without_version_deploys_latest() -> None:
 
 
 @respx.mock
-def test_pragma_client_get_deployment_status_returns_deployment_result() -> None:
-    """Returns DeploymentResult with current deployment state."""
+def test_pragma_client_get_deployment_status_returns_provider_status() -> None:
+    """Returns ProviderStatus with current deployment state."""
     respx.get("http://localhost:8000/providers/my-provider/deployment").mock(
         return_value=httpx.Response(
             200,
             json={
-                "deployment_name": "provider-my-provider",
                 "status": "available",
-                "available_replicas": 1,
-                "ready_replicas": 1,
-                "message": None,
+                "version": "20250115.120000",
+                "updated_at": "2025-01-15T12:00:00Z",
+                "healthy": True,
             },
         )
     )
@@ -646,10 +646,10 @@ def test_pragma_client_get_deployment_status_returns_deployment_result() -> None
     with PragmaClient(auth_token=None) as client:
         result = client.get_deployment_status("my-provider")
 
-    assert isinstance(result, DeploymentResult)
+    assert isinstance(result, ProviderStatus)
     assert result.status == DeploymentStatus.AVAILABLE
-    assert result.available_replicas == 1
-    assert result.ready_replicas == 1
+    assert result.version == "20250115.120000"
+    assert result.healthy is True
 
 
 @respx.mock
@@ -779,17 +779,16 @@ async def test_async_pragma_client_deploy_provider_returns_deployment_result() -
 
 
 @respx.mock
-async def test_async_pragma_client_get_deployment_status_returns_deployment_result() -> None:
-    """Returns DeploymentResult with current deployment state."""
+async def test_async_pragma_client_get_deployment_status_returns_provider_status() -> None:
+    """Returns ProviderStatus with current deployment state."""
     respx.get("http://localhost:8000/providers/my-provider/deployment").mock(
         return_value=httpx.Response(
             200,
             json={
-                "deployment_name": "provider-my-provider",
                 "status": "available",
-                "available_replicas": 1,
-                "ready_replicas": 1,
-                "message": None,
+                "version": "20250115.120000",
+                "updated_at": "2025-01-15T12:00:00Z",
+                "healthy": True,
             },
         )
     )
@@ -797,9 +796,10 @@ async def test_async_pragma_client_get_deployment_status_returns_deployment_resu
     async with AsyncPragmaClient(auth_token=None) as client:
         result = await client.get_deployment_status("my-provider")
 
-    assert isinstance(result, DeploymentResult)
+    assert isinstance(result, ProviderStatus)
     assert result.status == DeploymentStatus.AVAILABLE
-    assert result.available_replicas == 1
+    assert result.version == "20250115.120000"
+    assert result.healthy is True
 
 
 @respx.mock
