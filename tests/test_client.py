@@ -9,7 +9,7 @@ from conftest import StubConfig, StubResource
 
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
 from pragma_sdk.models import (
-    BuildResult,
+    BuildInfo,
     BuildStatus,
     DeploymentStatus,
     LifecycleState,
@@ -513,15 +513,17 @@ def test_pragma_client_push_provider_returns_push_result() -> None:
 
 
 @respx.mock
-def test_pragma_client_get_build_status_returns_build_result() -> None:
-    """Returns BuildResult with build status."""
+def test_pragma_client_get_build_status_returns_build_info() -> None:
+    """Returns BuildInfo with build status."""
     respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
+                "provider_id": "my-provider",
                 "version": "20250115.120000",
                 "status": "success",
                 "error_message": None,
+                "created_at": "2025-01-15T12:00:00Z",
             },
         )
     )
@@ -529,7 +531,8 @@ def test_pragma_client_get_build_status_returns_build_result() -> None:
     with PragmaClient(auth_token=None) as client:
         result = client.get_build_status("my-provider", "20250115.120000")
 
-    assert isinstance(result, BuildResult)
+    assert isinstance(result, BuildInfo)
+    assert result.provider_id == "my-provider"
     assert result.version == "20250115.120000"
     assert result.status == BuildStatus.SUCCESS
     assert result.error_message is None
@@ -537,14 +540,16 @@ def test_pragma_client_get_build_status_returns_build_result() -> None:
 
 @respx.mock
 def test_pragma_client_get_build_status_returns_failed_build() -> None:
-    """Returns BuildResult with error message on failed build."""
+    """Returns BuildInfo with error message on failed build."""
     respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
+                "provider_id": "my-provider",
                 "version": "20250115.120000",
                 "status": "failed",
                 "error_message": "Dockerfile syntax error",
+                "created_at": "2025-01-15T12:00:00Z",
             },
         )
     )
@@ -679,15 +684,17 @@ async def test_async_pragma_client_push_provider_returns_push_result() -> None:
 
 
 @respx.mock
-async def test_async_pragma_client_get_build_status_returns_build_result() -> None:
-    """Returns BuildResult with build status."""
+async def test_async_pragma_client_get_build_status_returns_build_info() -> None:
+    """Returns BuildInfo with build status."""
     respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
+                "provider_id": "my-provider",
                 "version": "20250115.120000",
                 "status": "success",
                 "error_message": None,
+                "created_at": "2025-01-15T12:00:00Z",
             },
         )
     )
@@ -695,7 +702,8 @@ async def test_async_pragma_client_get_build_status_returns_build_result() -> No
     async with AsyncPragmaClient(auth_token=None) as client:
         result = await client.get_build_status("my-provider", "20250115.120000")
 
-    assert isinstance(result, BuildResult)
+    assert isinstance(result, BuildInfo)
+    assert result.provider_id == "my-provider"
     assert result.version == "20250115.120000"
     assert result.status == BuildStatus.SUCCESS
     assert result.error_message is None
@@ -703,14 +711,16 @@ async def test_async_pragma_client_get_build_status_returns_build_result() -> No
 
 @respx.mock
 async def test_async_pragma_client_get_build_status_returns_failed_build() -> None:
-    """Returns BuildResult with error message on failed build."""
+    """Returns BuildInfo with error message on failed build."""
     respx.get("http://localhost:8000/providers/my-provider/builds/20250115.120000").mock(
         return_value=httpx.Response(
             200,
             json={
+                "provider_id": "my-provider",
                 "version": "20250115.120000",
                 "status": "failed",
                 "error_message": "Dockerfile syntax error",
+                "created_at": "2025-01-15T12:00:00Z",
             },
         )
     )

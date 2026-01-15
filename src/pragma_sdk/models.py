@@ -52,20 +52,6 @@ class PushResult(BaseModel):
     message: str
 
 
-class BuildResult(BaseModel):
-    """Result of a build status query.
-
-    Attributes:
-        version: CalVer version string for the build.
-        status: Current build status.
-        error_message: Error message (set on failure).
-    """
-
-    version: str
-    status: BuildStatus
-    error_message: str | None = None
-
-
 class BuildInfo(BaseModel):
     """Build information for a provider version.
 

@@ -18,7 +18,6 @@ from pragma_sdk.auth import BearerAuth
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
 from pragma_sdk.models import (
     BuildInfo,
-    BuildResult,
     BuildStatus,
     Config,
     DeploymentResult,
@@ -51,7 +50,6 @@ __all__ = [
     "AsyncPragmaClient",
     "BearerAuth",
     "BuildInfo",
-    "BuildResult",
     "BuildStatus",
     "Config",
     "create_secret_config",

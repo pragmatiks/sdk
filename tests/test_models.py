@@ -8,7 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from pragma_sdk import (
-    BuildResult,
+    BuildInfo,
     BuildStatus,
     Config,
     DeploymentResult,
@@ -129,24 +129,34 @@ def test_push_result_model() -> None:
     assert result.message == "Build started"
 
 
-def test_build_result_success() -> None:
-    """BuildResult stores successful build info."""
-    result = BuildResult(
+def test_build_info_success() -> None:
+    """BuildInfo stores successful build info."""
+    from datetime import UTC, datetime
+
+    result = BuildInfo(
+        provider_id="test-provider",
         version="20250115.120000",
         status=BuildStatus.SUCCESS,
+        created_at=datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC),
     )
+    assert result.provider_id == "test-provider"
     assert result.version == "20250115.120000"
     assert result.status == BuildStatus.SUCCESS
     assert result.error_message is None
 
 
-def test_build_result_failure() -> None:
-    """BuildResult stores failed build info."""
-    result = BuildResult(
+def test_build_info_failure() -> None:
+    """BuildInfo stores failed build info."""
+    from datetime import UTC, datetime
+
+    result = BuildInfo(
+        provider_id="test-provider",
         version="20250115.120000",
         status=BuildStatus.FAILED,
         error_message="Dockerfile syntax error",
+        created_at=datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC),
     )
+    assert result.provider_id == "test-provider"
     assert result.version == "20250115.120000"
     assert result.status == BuildStatus.FAILED
     assert result.error_message == "Dockerfile syntax error"

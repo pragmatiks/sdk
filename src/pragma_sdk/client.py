@@ -12,7 +12,6 @@ from pragma_sdk.auth import BearerAuth
 from pragma_sdk.config import get_token_for_context
 from pragma_sdk.models import (
     BuildInfo,
-    BuildResult,
     DeploymentResult,
     ProviderDeleteResult,
     ProviderInfo,
@@ -418,7 +417,7 @@ class PragmaClient(BaseClient):
         )
         return PushResult.model_validate(response)
 
-    def get_build_status(self, provider_id: str, version: str) -> BuildResult:
+    def get_build_status(self, provider_id: str, version: str) -> BuildInfo:
         """Get the status of a build by version.
 
         Args:
@@ -426,13 +425,13 @@ class PragmaClient(BaseClient):
             version: CalVer version string (YYYYMMDD.HHMMSS).
 
         Returns:
-            BuildResult with current build state.
+            BuildInfo with current build state.
 
         Raises:
             httpx.HTTPStatusError: If build not found or request fails.
         """  # noqa: DOC502
         response = self._request("GET", f"/providers/{provider_id}/builds/{version}")
-        return BuildResult.model_validate(response)
+        return BuildInfo.model_validate(response)
 
     def stream_build_logs(self, provider_id: str, version: str) -> AbstractContextManager[httpx.Response]:
         """Stream logs from a build.
@@ -913,7 +912,7 @@ class AsyncPragmaClient(BaseClient):
         )
         return PushResult.model_validate(response)
 
-    async def get_build_status(self, provider_id: str, version: str) -> BuildResult:
+    async def get_build_status(self, provider_id: str, version: str) -> BuildInfo:
         """Get the status of a build by version.
 
         Args:
@@ -921,13 +920,13 @@ class AsyncPragmaClient(BaseClient):
             version: CalVer version string (YYYYMMDD.HHMMSS).
 
         Returns:
-            BuildResult with current build state.
+            BuildInfo with current build state.
 
         Raises:
             httpx.HTTPStatusError: If build not found or request fails.
         """  # noqa: DOC502
         response = await self._request("GET", f"/providers/{provider_id}/builds/{version}")
-        return BuildResult.model_validate(response)
+        return BuildInfo.model_validate(response)
 
     def stream_build_logs(self, provider_id: str, version: str) -> AbstractAsyncContextManager[httpx.Response]:
         """Stream logs from a build.
