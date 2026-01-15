@@ -1,3 +1,9 @@
+## v0.7.0 (2026-01-15)
+
+### Feat
+
+- **sdk**: add UserInfo model and get_me method
+
 ## v0.6.0 (2026-01-14)
 
 ### Feat
