@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/wordmark.png" alt="Pragmatiks" width="800">
+  <img src="assets/wordmark.png" alt="Pragma-OS" width="800">
 </p>
 
 # Pragma SDK
@@ -49,7 +49,7 @@ uv add pragmatiks-sdk
 
 ## Features
 
-- **HTTP Clients** - Sync and async clients for the Pragma API
+- **HTTP Clients** - Sync and async clients for the pragma-os API
 - **Provider Authoring** - Build custom providers with type-safe Config and Outputs
 - **Field References** - Reference outputs from other resources dynamically
 - **Testing Harness** - Test provider lifecycle methods locally without deployment
