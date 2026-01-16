@@ -15,7 +15,6 @@ from pragma_sdk.models import (
     LifecycleState,
     ProviderStatus,
     PushResult,
-    ResourceDefinition,
 )
 
 
@@ -186,50 +185,6 @@ def test_pragma_client_raises_on_not_found() -> None:
             client.get_resource("test", "db", "notfound")
 
     assert exc_info.value.response.status_code == 404
-
-
-@respx.mock
-def test_pragma_client_register_resource_returns_resource_definition() -> None:
-    """Returns ResourceDefinition from API response."""
-    route = respx.post("http://localhost:8000/resources/register").mock(
-        return_value=httpx.Response(
-            200,
-            json={
-                "provider": "postgres",
-                "resource": "database",
-                "schema": {"type": "object"},
-            },
-        )
-    )
-
-    with PragmaClient(auth_token=None) as client:
-        result = client.register_resource(
-            provider="postgres",
-            resource="database",
-            schema={"type": "object"},
-            description="PostgreSQL database",
-        )
-
-    assert route.called
-    request_json = route.calls[0].request.content.decode()
-    assert "postgres" in request_json
-    assert "database" in request_json
-    assert isinstance(result, ResourceDefinition)
-    assert result.provider == "postgres"
-    assert result.resource == "database"
-
-
-@respx.mock
-def test_pragma_client_unregister_resource_deletes_from_api() -> None:
-    """Sends resource type unregistration to API."""
-    route = respx.delete("http://localhost:8000/resources/unregister/postgres/database").mock(
-        return_value=httpx.Response(204)
-    )
-
-    with PragmaClient(auth_token=None) as client:
-        client.unregister_resource(provider="postgres", resource="database")
-
-    assert route.called
 
 
 def test_pragma_client_context_manager_closes_client(mocker) -> None:
@@ -421,50 +376,6 @@ async def test_async_pragma_client_raises_on_not_found() -> None:
             await client.get_resource("test", "db", "notfound")
 
     assert exc_info.value.response.status_code == 404
-
-
-@respx.mock
-async def test_async_pragma_client_register_resource_returns_resource_definition() -> None:
-    """Returns ResourceDefinition from API response."""
-    route = respx.post("http://localhost:8000/resources/register").mock(
-        return_value=httpx.Response(
-            200,
-            json={
-                "provider": "postgres",
-                "resource": "database",
-                "schema": {"type": "object"},
-            },
-        )
-    )
-
-    async with AsyncPragmaClient(auth_token=None) as client:
-        result = await client.register_resource(
-            provider="postgres",
-            resource="database",
-            schema={"type": "object"},
-            description="PostgreSQL database",
-        )
-
-    assert route.called
-    request_json = route.calls[0].request.content.decode()
-    assert "postgres" in request_json
-    assert "database" in request_json
-    assert isinstance(result, ResourceDefinition)
-    assert result.provider == "postgres"
-    assert result.resource == "database"
-
-
-@respx.mock
-async def test_async_pragma_client_unregister_resource_deletes_from_api() -> None:
-    """Sends resource type unregistration to API."""
-    route = respx.delete("http://localhost:8000/resources/unregister/postgres/database").mock(
-        return_value=httpx.Response(204)
-    )
-
-    async with AsyncPragmaClient(auth_token=None) as client:
-        await client.unregister_resource(provider="postgres", resource="database")
-
-    assert route.called
 
 
 async def test_async_pragma_client_context_manager_closes_client(mocker) -> None:

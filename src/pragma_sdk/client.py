@@ -18,7 +18,6 @@ from pragma_sdk.models import (
     ProviderStatus,
     PushResult,
     Resource,
-    ResourceDefinition,
     UserInfo,
     format_resource_id,
 )
@@ -165,48 +164,6 @@ class PragmaClient(BaseClient):
         response = self._request("GET", "/auth/me")
         return UserInfo.model_validate(response)
 
-    def register_resource(
-        self,
-        provider: str,
-        resource: str,
-        schema: dict[str, Any] | None = None,
-        description: str | None = None,
-        tags: list[str] | None = None,
-    ) -> ResourceDefinition:
-        """Register a new resource type.
-
-        Args:
-            provider: Provider that will manage this resource type.
-            resource: Resource type name (e.g., 'database', 'connection').
-            schema: JSON schema for validating resource configurations.
-            description: Human-readable description.
-            tags: Tags for categorization and filtering.
-
-        Returns:
-            The registered resource definition.
-
-        Raises:
-            httpx.HTTPStatusError: If registration fails.
-        """  # noqa: DOC502
-        payload: dict[str, Any] = {"provider": provider, "resource": resource}
-        if schema is not None:
-            payload["schema"] = schema
-        if description is not None:
-            payload["description"] = description
-        if tags is not None:
-            payload["tags"] = tags
-
-        response = self._request("POST", "/resources/register", json_data=payload)
-        return ResourceDefinition.model_validate(response)
-
-    def unregister_resource(self, provider: str, resource: str) -> None:
-        """Unregister a resource type.
-
-        Raises:
-            httpx.HTTPStatusError: If unregistration fails or resource type not found.
-        """  # noqa: DOC502
-        self._request("DELETE", f"/resources/unregister/{provider}/{resource}")
-
     def list_resources[ResourceT: Resource](
         self,
         provider: str | None = None,
@@ -241,6 +198,23 @@ class PragmaClient(BaseClient):
         if model is not None:
             return [model.model_validate(item) for item in response]
         return response
+
+    def list_resource_types(self, provider: str | None = None) -> list[dict[str, Any]]:
+        """List available resource types from deployed providers.
+
+        Args:
+            provider: Filter by provider name.
+
+        Returns:
+            List of resource definitions containing provider, resource, schema, description.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails.
+        """  # noqa: DOC502
+        params = {}
+        if provider:
+            params["provider"] = provider
+        return self._request("GET", "/resources/types", params=params)
 
     def get_resource[ResourceT: Resource](
         self,
@@ -660,48 +634,6 @@ class AsyncPragmaClient(BaseClient):
         except httpx.HTTPError:
             return False
 
-    async def register_resource(
-        self,
-        provider: str,
-        resource: str,
-        schema: dict[str, Any] | None = None,
-        description: str | None = None,
-        tags: list[str] | None = None,
-    ) -> ResourceDefinition:
-        """Register a new resource type.
-
-        Args:
-            provider: Provider that will manage this resource type.
-            resource: Resource type name (e.g., 'database', 'connection').
-            schema: JSON schema for validating resource configurations.
-            description: Human-readable description.
-            tags: Tags for categorization and filtering.
-
-        Returns:
-            The registered resource definition.
-
-        Raises:
-            httpx.HTTPStatusError: If registration fails.
-        """  # noqa: DOC502
-        payload: dict[str, Any] = {"provider": provider, "resource": resource}
-        if schema is not None:
-            payload["schema"] = schema
-        if description is not None:
-            payload["description"] = description
-        if tags is not None:
-            payload["tags"] = tags
-
-        response = await self._request("POST", "/resources/register", json_data=payload)
-        return ResourceDefinition.model_validate(response)
-
-    async def unregister_resource(self, provider: str, resource: str) -> None:
-        """Unregister a resource type.
-
-        Raises:
-            httpx.HTTPStatusError: If unregistration fails or resource type not found.
-        """  # noqa: DOC502
-        await self._request("DELETE", f"/resources/unregister/{provider}/{resource}")
-
     async def list_resources[ResourceT: Resource](
         self,
         provider: str | None = None,
@@ -736,6 +668,23 @@ class AsyncPragmaClient(BaseClient):
         if model is not None:
             return [model.model_validate(item) for item in response]
         return response
+
+    async def list_resource_types(self, provider: str | None = None) -> list[dict[str, Any]]:
+        """List available resource types from deployed providers.
+
+        Args:
+            provider: Filter by provider name.
+
+        Returns:
+            List of resource definitions containing provider, resource, schema, description.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails.
+        """  # noqa: DOC502
+        params = {}
+        if provider:
+            params["provider"] = provider
+        return await self._request("GET", "/resources/types", params=params)
 
     async def get_resource[ResourceT: Resource](
         self,
