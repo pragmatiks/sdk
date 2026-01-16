@@ -16,6 +16,14 @@ Platform resource types:
 
 from pragma_sdk.auth import BearerAuth
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
+from pragma_sdk.context import (
+    RuntimeContext,
+    get_runtime_context,
+    reset_runtime_context,
+    set_runtime_context,
+    wait_for_resource_state,
+)
+from pragma_sdk.exceptions import ResourceFailedError
 from pragma_sdk.models import (
     BuildInfo,
     BuildStatus,
@@ -28,6 +36,7 @@ from pragma_sdk.models import (
     FieldReference,
     LifecycleState,
     Outputs,
+    OwnerReference,
     ProviderDeleteResult,
     ProviderInfo,
     ProviderResponse,
@@ -55,6 +64,7 @@ __all__ = [
     "BuildInfo",
     "BuildStatus",
     "Config",
+    "ResourceFailedError",
     "create_secret_config",
     "Dependency",
     "DeploymentResult",
@@ -63,10 +73,12 @@ __all__ = [
     "Field",
     "FieldReference",
     "format_resource_id",
+    "get_runtime_context",
     "is_dependency_marker",
     "is_field_ref_marker",
     "LifecycleState",
     "Outputs",
+    "OwnerReference",
     "PragmaClient",
     "Provider",
     "ProviderDeleteResult",
@@ -74,10 +86,14 @@ __all__ = [
     "ProviderResponse",
     "ProviderStatus",
     "PushResult",
+    "reset_runtime_context",
     "Resource",
     "ResourceReference",
     "ResponseStatus",
+    "RuntimeContext",
     "SecretConfig",
     "SecretOutputs",
+    "set_runtime_context",
     "UserInfo",
+    "wait_for_resource_state",
 ]

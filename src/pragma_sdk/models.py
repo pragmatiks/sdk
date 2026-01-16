@@ -200,6 +200,25 @@ class ResourceReference(BaseModel):
         return format_resource_id(self.provider, self.resource, self.name)
 
 
+class OwnerReference(BaseModel):
+    """Reference to a resource that owns this resource for lifecycle coordination.
+
+    Used for cascading deletes and ownership tracking. When an owner resource
+    is deleted, owned resources can be automatically cleaned up.
+
+    A resource can have multiple owners (rare but valid for shared resources).
+    """
+
+    provider: str
+    resource: str
+    name: str
+
+    @property
+    def id(self) -> str:
+        """Unique resource ID for the owner resource."""
+        return format_resource_id(self.provider, self.resource, self.name)
+
+
 class FieldReference(ResourceReference):
     """Reference to a specific output field of another resource."""
 
@@ -263,9 +282,7 @@ class Dependency[ResourceT: "Resource"](BaseModel):
 
     model_config = {"populate_by_name": True}
 
-    dependency_marker: bool = PydanticField(
-        default=True, alias="__dependency__", serialization_alias="__dependency__"
-    )
+    dependency_marker: bool = PydanticField(default=True, alias="__dependency__", serialization_alias="__dependency__")
     provider: str
     resource: str
     name: str
@@ -292,10 +309,7 @@ class Dependency[ResourceT: "Resource"](BaseModel):
         """
         if self._resolved is not None:
             return self._resolved
-        raise RuntimeError(
-            f"Dependency '{self.id}' not resolved. "
-            "The dependent resource may not be READY yet."
-        )
+        raise RuntimeError(f"Dependency '{self.id}' not resolved. The dependent resource may not be READY yet.")
 
 
 type Field[T] = T | FieldReference
@@ -360,6 +374,7 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
 
     config: ConfigT
     dependencies: list[ResourceReference] = PydanticField(default_factory=list)
+    owner_references: list[OwnerReference] = PydanticField(default_factory=list)
 
     outputs: OutputsT | None = None
     error: str | None = None
@@ -387,3 +402,147 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
     async def on_delete(self) -> None:
         """Handle resource deletion."""
         raise NotImplementedError(f"{self.__class__.__name__} must implement on_delete()")
+
+    def set_owner(self, owner: "Resource") -> "Resource":
+        """Set this resource's owner for lifecycle management.
+
+        Establishes an ownership relationship where the owner resource controls
+        this resource's lifecycle. When the owner is deleted, owned resources
+        can be automatically cleaned up via cascading deletes.
+
+        Args:
+            owner: Parent resource that will own this resource.
+
+        Returns:
+            Self for method chaining.
+        """
+        ref = OwnerReference(
+            provider=owner.provider,
+            resource=owner.resource,
+            name=owner.name,
+        )
+        if ref not in self.owner_references:
+            self.owner_references.append(ref)
+        return self
+
+    async def apply(self) -> "Resource[ConfigT, OutputsT]":
+        """Apply this resource through the API.
+
+        Sends the resource to the API for creation or update. The API will
+        validate, persist, and emit lifecycle events for provider processing.
+        The resource's lifecycle_state will be set to PENDING by the API.
+
+        Call this from within provider lifecycle handlers to create subresources.
+        After apply(), call wait_ready() to wait for the resource to be processed.
+
+        Returns:
+            Self for method chaining.
+
+        Raises:
+            RuntimeError: If called outside a lifecycle handler context or if
+                the resource could not be applied.
+
+        Example:
+            ```python
+            async def on_create(self):
+                db = DatabaseResource(name=f"{self.name}-db", config=DbConfig(...))
+                db.set_owner(self)
+                await db.apply()
+                await db.wait_ready(timeout=120.0)
+                return AppOutputs(db_url=db.outputs.connection_url)
+            ```
+        """
+        from pragma_sdk.context import apply_resource
+
+        resource_data = {
+            "provider": self.provider,
+            "resource": self.resource,
+            "name": self.name,
+            "config": self.config.model_dump(),
+            "owner_references": [ref.model_dump() for ref in self.owner_references],
+        }
+        if self.tags:
+            resource_data["tags"] = self.tags
+
+        await apply_resource(resource_data)
+        self.lifecycle_state = LifecycleState.PENDING
+        return self
+
+    async def wait_ready(self, timeout: float = 60.0) -> "Resource[ConfigT, OutputsT]":
+        """Wait for this resource to reach READY state.
+
+        Subscribes to NATS state notifications and waits for the resource
+        to transition to READY. Updates self with the outputs from the
+        state notification.
+
+        Args:
+            timeout: Maximum seconds to wait before raising TimeoutError.
+
+        Returns:
+            Self with updated outputs and lifecycle_state.
+
+        Raises:
+            TimeoutError: If READY state not reached within timeout.
+            ResourceFailedError: If resource transitions to FAILED state.
+            RuntimeError: If called outside a lifecycle handler context.
+
+        Example:
+            ```python
+            async def on_create(self):
+                db = DatabaseResource(name=f"{self.name}-db", config=DbConfig(...))
+                db.set_owner(self)
+                await db.apply()
+                await db.wait_ready(timeout=120.0)
+                return AppOutputs(db_url=db.outputs.connection_url)
+            ```
+        """
+        from pragma_sdk.context import wait_for_resource_state
+
+        data = await wait_for_resource_state(self.id, LifecycleState.READY, timeout)
+
+        # Update self with the latest state
+        self.lifecycle_state = LifecycleState(data.get("lifecycle_state", "ready"))
+
+        # Parse outputs if available and we have an outputs type
+        outputs_data = data.get("outputs")
+        if outputs_data is not None:
+            # Get the outputs type from the class generic parameters
+            outputs_type = self._get_outputs_type()
+            if outputs_type is not None:
+                self.outputs = outputs_type.model_validate(outputs_data)
+            else:
+                self.outputs = outputs_data  # type: ignore[assignment]
+
+        return self
+
+    def _get_outputs_type(self) -> type[Outputs] | None:
+        """Get the OutputsT type from the model fields annotation."""
+        import typing
+
+        # Get the annotation from the class model_fields['outputs']
+        outputs_field = self.__class__.model_fields.get("outputs")
+        if outputs_field is None:
+            return None
+
+        annotation = outputs_field.annotation
+        if annotation is None:
+            return None
+
+        # Handle Optional[OutputsT] (Union[OutputsT, None])
+        origin = typing.get_origin(annotation)
+        if origin is type(None):
+            return None
+
+        # If it's a Union (Optional), get the non-None type
+        if origin is typing.Union:
+            args = typing.get_args(annotation)
+            for arg in args:
+                if arg is not type(None) and isinstance(arg, type) and issubclass(arg, Outputs):
+                    return arg
+            return None
+
+        # Direct type
+        if isinstance(annotation, type) and issubclass(annotation, Outputs):
+            return annotation
+
+        return None

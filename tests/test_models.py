@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from pydantic import ValidationError
@@ -17,12 +17,12 @@ from pragma_sdk import (
     Field,
     FieldReference,
     LifecycleState,
+    OwnerReference,
     PushResult,
     ResourceReference,
     format_resource_id,
     is_dependency_marker,
 )
-
 
 if TYPE_CHECKING:
     from conftest import StubResource
@@ -64,6 +64,53 @@ def test_field_reference_extends_resource_reference() -> None:
     assert ref.name == "my-db"
     assert ref.field == "outputs.connection_url"
     assert ref.id == "resource:postgres_database_my-db"
+
+
+# --- OwnerReference tests ---
+
+
+def test_owner_reference_initialization() -> None:
+    """OwnerReference accepts provider, resource, name fields."""
+    ref = OwnerReference(provider="app", resource="server", name="my-server")
+    assert ref.provider == "app"
+    assert ref.resource == "server"
+    assert ref.name == "my-server"
+
+
+def test_owner_reference_id_property() -> None:
+    """OwnerReference.id returns formatted resource ID."""
+    ref = OwnerReference(provider="app", resource="server", name="my-server")
+    assert ref.id == "resource:app_server_my-server"
+
+
+def test_owner_reference_validation_requires_all_fields() -> None:
+    """OwnerReference requires provider, resource, and name."""
+    with pytest.raises(ValidationError):
+        OwnerReference(provider="app")  # type: ignore[call-arg]
+
+    with pytest.raises(ValidationError):
+        OwnerReference(provider="app", resource="server")  # type: ignore[call-arg]
+
+
+def test_owner_reference_equality() -> None:
+    """OwnerReference instances with same fields are equal."""
+    ref1 = OwnerReference(provider="app", resource="server", name="my-server")
+    ref2 = OwnerReference(provider="app", resource="server", name="my-server")
+    ref3 = OwnerReference(provider="app", resource="server", name="other-server")
+
+    assert ref1 == ref2
+    assert ref1 != ref3
+
+
+def test_owner_reference_not_equal_to_resource_reference() -> None:
+    """OwnerReference and ResourceReference are distinct types."""
+    owner_ref = OwnerReference(provider="app", resource="server", name="my-server")
+    resource_ref = ResourceReference(provider="app", resource="server", name="my-server")
+
+    # Different types even with same data
+    assert type(owner_ref) is not type(resource_ref)
+    # But they have the same id since both use format_resource_id
+    assert owner_ref.id == resource_ref.id
 
 
 def test_config_forbids_extra_fields() -> None:
@@ -478,3 +525,354 @@ def test_dependency_serialization_excludes_resolved() -> None:
         "resource": "stub",
         "name": "my-db",
     }
+
+
+# ==================== Resource.set_owner() Tests ====================
+
+
+def test_set_owner_adds_owner_reference(stub_resource: StubResource) -> None:
+    """set_owner() adds owner reference to the resource."""
+    from conftest import StubConfig, StubResource
+
+    owner = StubResource(name="parent-resource", config=StubConfig(name="parent"))
+
+    assert len(stub_resource.owner_references) == 0
+
+    stub_resource.set_owner(owner)
+
+    assert len(stub_resource.owner_references) == 1
+    ref = stub_resource.owner_references[0]
+    assert ref.provider == "test"
+    assert ref.resource == "stub"
+    assert ref.name == "parent-resource"
+
+
+def test_set_owner_prevents_duplicates(stub_resource: StubResource) -> None:
+    """set_owner() does not add duplicate owner references."""
+    from conftest import StubConfig, StubResource
+
+    owner = StubResource(name="parent-resource", config=StubConfig(name="parent"))
+
+    stub_resource.set_owner(owner)
+    stub_resource.set_owner(owner)
+    stub_resource.set_owner(owner)
+
+    assert len(stub_resource.owner_references) == 1
+
+
+def test_set_owner_returns_self_for_chaining(stub_resource: StubResource) -> None:
+    """set_owner() returns self for method chaining."""
+    from conftest import StubConfig, StubResource
+
+    owner = StubResource(name="parent-resource", config=StubConfig(name="parent"))
+
+    result = stub_resource.set_owner(owner)
+
+    assert result is stub_resource
+
+
+def test_set_owner_allows_multiple_owners(stub_resource: StubResource) -> None:
+    """set_owner() allows multiple distinct owners."""
+    from conftest import StubConfig, StubResource
+
+    owner1 = StubResource(name="parent-1", config=StubConfig(name="p1"))
+    owner2 = StubResource(name="parent-2", config=StubConfig(name="p2"))
+
+    stub_resource.set_owner(owner1).set_owner(owner2)
+
+    assert len(stub_resource.owner_references) == 2
+    assert stub_resource.owner_references[0].name == "parent-1"
+    assert stub_resource.owner_references[1].name == "parent-2"
+
+
+def test_set_owner_creates_correct_owner_reference_type(stub_resource: StubResource) -> None:
+    """set_owner() creates OwnerReference, not ResourceReference."""
+    from conftest import StubConfig, StubResource
+
+    owner = StubResource(name="parent-resource", config=StubConfig(name="parent"))
+    stub_resource.set_owner(owner)
+
+    ref = stub_resource.owner_references[0]
+    assert isinstance(ref, OwnerReference)
+
+
+# ==================== Resource.apply() Tests ====================
+
+
+class MockRuntimeContextForApply:
+    """Mock runtime context for testing apply()."""
+
+    def __init__(
+        self,
+        raise_exception: Exception | None = None,
+    ):
+        self.raise_exception = raise_exception
+        self.apply_calls: list[dict[str, Any]] = []
+
+    async def apply_resource(self, resource_data: dict[str, Any]) -> None:
+        self.apply_calls.append(resource_data)
+        if self.raise_exception:
+            raise self.raise_exception
+
+    async def wait_for_state(
+        self,
+        resource_id: str,
+        target_state: LifecycleState,
+        timeout: float,
+    ) -> dict[str, Any]:
+        return {"lifecycle_state": "ready"}
+
+
+@pytest.mark.asyncio
+async def test_apply_raises_without_context(stub_resource: StubResource) -> None:
+    """apply() raises RuntimeError when called without runtime context."""
+    with pytest.raises(RuntimeError, match="must be called from within a provider lifecycle handler"):
+        await stub_resource.apply()
+
+
+@pytest.mark.asyncio
+async def test_apply_delegates_to_context(stub_resource: StubResource) -> None:
+    """apply() delegates to apply_resource with serialized resource data."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForApply()
+    token = set_runtime_context(ctx)
+    try:
+        await stub_resource.apply()
+
+        assert len(ctx.apply_calls) == 1
+        data = ctx.apply_calls[0]
+        assert data["provider"] == "test"
+        assert data["resource"] == "stub"
+        assert data["name"] == "my-resource"
+        assert "config" in data
+        assert data["owner_references"] == []
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_apply_returns_self_for_chaining(stub_resource: StubResource) -> None:
+    """apply() returns self for method chaining."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForApply()
+    token = set_runtime_context(ctx)
+    try:
+        result = await stub_resource.apply()
+        assert result is stub_resource
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_apply_sets_lifecycle_state_to_pending(stub_resource: StubResource) -> None:
+    """apply() sets lifecycle_state to PENDING."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForApply()
+    token = set_runtime_context(ctx)
+    try:
+        assert stub_resource.lifecycle_state == LifecycleState.DRAFT
+        await stub_resource.apply()
+        assert stub_resource.lifecycle_state == LifecycleState.PENDING
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_apply_includes_owner_references(stub_resource: StubResource) -> None:
+    """apply() includes owner_references in serialized data."""
+    from conftest import StubConfig, StubResource
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    owner = StubResource(name="parent-resource", config=StubConfig(name="parent"))
+    stub_resource.set_owner(owner)
+
+    ctx = MockRuntimeContextForApply()
+    token = set_runtime_context(ctx)
+    try:
+        await stub_resource.apply()
+
+        data = ctx.apply_calls[0]
+        assert len(data["owner_references"]) == 1
+        assert data["owner_references"][0]["provider"] == "test"
+        assert data["owner_references"][0]["resource"] == "stub"
+        assert data["owner_references"][0]["name"] == "parent-resource"
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_apply_includes_tags_when_present(stub_resource: StubResource) -> None:
+    """apply() includes tags in serialized data when present."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    stub_resource.tags = ["production", "critical"]
+
+    ctx = MockRuntimeContextForApply()
+    token = set_runtime_context(ctx)
+    try:
+        await stub_resource.apply()
+
+        data = ctx.apply_calls[0]
+        assert data["tags"] == ["production", "critical"]
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_apply_propagates_runtime_error(stub_resource: StubResource) -> None:
+    """apply() propagates RuntimeError from context."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForApply(raise_exception=RuntimeError("Failed to apply resource"))
+    token = set_runtime_context(ctx)
+    try:
+        with pytest.raises(RuntimeError, match="Failed to apply resource"):
+            await stub_resource.apply()
+    finally:
+        reset_runtime_context(token)
+
+
+# ==================== Resource.wait_ready() Tests ====================
+
+
+class MockRuntimeContextForWaitReady:
+    """Mock runtime context for testing wait_ready()."""
+
+    def __init__(
+        self,
+        return_value: dict[str, Any] | None = None,
+        raise_exception: Exception | None = None,
+    ):
+        self.return_value = return_value or {"lifecycle_state": "ready"}
+        self.raise_exception = raise_exception
+        self.wait_calls: list[tuple[str, LifecycleState, float]] = []
+
+    async def wait_for_state(
+        self,
+        resource_id: str,
+        target_state: LifecycleState,
+        timeout: float,
+    ) -> dict[str, Any]:
+        self.wait_calls.append((resource_id, target_state, timeout))
+        if self.raise_exception:
+            raise self.raise_exception
+        return self.return_value
+
+    async def apply_resource(self, resource_data: dict[str, Any]) -> None:
+        pass  # Not used in wait_ready tests
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_raises_without_context(stub_resource: StubResource) -> None:
+    """wait_ready() raises RuntimeError when called without runtime context."""
+    with pytest.raises(RuntimeError, match="must be called from within a provider lifecycle handler"):
+        await stub_resource.wait_ready()
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_delegates_to_context(stub_resource: StubResource) -> None:
+    """wait_ready() delegates to wait_for_resource_state with correct arguments."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForWaitReady({"lifecycle_state": "ready", "outputs": {"url": "http://test"}})
+    token = set_runtime_context(ctx)
+    try:
+        await stub_resource.wait_ready(timeout=30.0)
+
+        assert len(ctx.wait_calls) == 1
+        assert ctx.wait_calls[0] == (stub_resource.id, LifecycleState.READY, 30.0)
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_uses_default_timeout(stub_resource: StubResource) -> None:
+    """wait_ready() uses default timeout of 60.0."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForWaitReady()
+    token = set_runtime_context(ctx)
+    try:
+        await stub_resource.wait_ready()
+        assert ctx.wait_calls[0][2] == 60.0
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_updates_lifecycle_state(stub_resource: StubResource) -> None:
+    """wait_ready() updates resource lifecycle_state from response."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForWaitReady({"lifecycle_state": "ready"})
+    token = set_runtime_context(ctx)
+    try:
+        assert stub_resource.lifecycle_state == LifecycleState.DRAFT
+
+        result = await stub_resource.wait_ready()
+
+        assert stub_resource.lifecycle_state == LifecycleState.READY
+        assert result is stub_resource
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_updates_outputs(stub_resource: StubResource) -> None:
+    """wait_ready() updates resource outputs from response."""
+    from pragma_sdk import Outputs
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForWaitReady({
+        "lifecycle_state": "ready",
+        "outputs": {"url": "http://updated-url.com"},
+    })
+    token = set_runtime_context(ctx)
+    try:
+        assert stub_resource.outputs is None
+
+        await stub_resource.wait_ready()
+
+        assert stub_resource.outputs is not None
+        # Check it's an Outputs subclass with correct data (avoid import path issues)
+        assert isinstance(stub_resource.outputs, Outputs)
+        assert stub_resource.outputs.__class__.__name__ == "StubOutputs"
+        assert stub_resource.outputs.url == "http://updated-url.com"
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_propagates_timeout_error(stub_resource: StubResource) -> None:
+    """wait_ready() propagates TimeoutError from context."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForWaitReady(
+        raise_exception=TimeoutError("Resource not ready within timeout")
+    )
+    token = set_runtime_context(ctx)
+    try:
+        with pytest.raises(TimeoutError, match="Resource not ready within timeout"):
+            await stub_resource.wait_ready()
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_wait_ready_propagates_resource_failed_error(stub_resource: StubResource) -> None:
+    """wait_ready() propagates ResourceFailedError from context."""
+    from pragma_sdk import ResourceFailedError
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForWaitReady(
+        raise_exception=ResourceFailedError("resource:test_stub_test", "Database connection failed")
+    )
+    token = set_runtime_context(ctx)
+    try:
+        with pytest.raises(ResourceFailedError, match="Database connection failed"):
+            await stub_resource.wait_ready()
+    finally:
+        reset_runtime_context(token)

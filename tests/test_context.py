@@ -1,0 +1,100 @@
+"""Unit tests for SDK runtime context."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pytest
+
+from pragma_sdk import LifecycleState
+from pragma_sdk.context import (
+    get_runtime_context,
+    reset_runtime_context,
+    set_runtime_context,
+    wait_for_resource_state,
+)
+
+
+class MockRuntimeContext:
+    """Mock runtime context for testing."""
+
+    def __init__(self, return_value: dict[str, Any] | None = None):
+        self.return_value = return_value or {"lifecycle_state": "ready"}
+        self.wait_calls: list[tuple[str, LifecycleState, float]] = []
+
+    async def wait_for_state(
+        self,
+        resource_id: str,
+        target_state: LifecycleState,
+        timeout: float,
+    ) -> dict[str, Any]:
+        self.wait_calls.append((resource_id, target_state, timeout))
+        return self.return_value
+
+
+def test_get_runtime_context_returns_none_when_not_set():
+    """get_runtime_context() returns None when no context is set."""
+    assert get_runtime_context() is None
+
+
+def test_set_runtime_context_returns_token():
+    """set_runtime_context() returns a token for resetting."""
+    ctx = MockRuntimeContext()
+    token = set_runtime_context(ctx)
+    assert token is not None
+    reset_runtime_context(token)
+
+
+def test_get_runtime_context_returns_set_context():
+    """get_runtime_context() returns the context that was set."""
+    ctx = MockRuntimeContext()
+    token = set_runtime_context(ctx)
+    try:
+        assert get_runtime_context() is ctx
+    finally:
+        reset_runtime_context(token)
+
+
+def test_reset_runtime_context_clears_context():
+    """reset_runtime_context() clears the context."""
+    ctx = MockRuntimeContext()
+    token = set_runtime_context(ctx)
+    reset_runtime_context(token)
+    assert get_runtime_context() is None
+
+
+@pytest.mark.asyncio
+async def test_wait_for_resource_state_raises_when_no_context():
+    """wait_for_resource_state() raises RuntimeError when called without context."""
+    with pytest.raises(RuntimeError, match="must be called from within a provider lifecycle handler"):
+        await wait_for_resource_state("resource:test", LifecycleState.READY)
+
+
+@pytest.mark.asyncio
+async def test_wait_for_resource_state_delegates_to_context():
+    """wait_for_resource_state() delegates to the runtime context."""
+    ctx = MockRuntimeContext({"lifecycle_state": "ready", "outputs": {"url": "http://test"}})
+    token = set_runtime_context(ctx)
+    try:
+        result = await wait_for_resource_state(
+            "resource:provider_type_name",
+            LifecycleState.READY,
+            timeout=30.0,
+        )
+        assert result == {"lifecycle_state": "ready", "outputs": {"url": "http://test"}}
+        assert len(ctx.wait_calls) == 1
+        assert ctx.wait_calls[0] == ("resource:provider_type_name", LifecycleState.READY, 30.0)
+    finally:
+        reset_runtime_context(token)
+
+
+@pytest.mark.asyncio
+async def test_wait_for_resource_state_uses_default_timeout():
+    """wait_for_resource_state() uses default timeout of 60.0."""
+    ctx = MockRuntimeContext()
+    token = set_runtime_context(ctx)
+    try:
+        await wait_for_resource_state("resource:test", LifecycleState.READY)
+        assert ctx.wait_calls[0][2] == 60.0
+    finally:
+        reset_runtime_context(token)
