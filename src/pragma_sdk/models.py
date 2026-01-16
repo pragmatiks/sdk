@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 from pydantic import Field as PydanticField
 
 
@@ -204,6 +204,57 @@ class FieldReference(ResourceReference):
     """Reference to a specific output field of another resource."""
 
     field: str
+
+
+class Dependency[ResourceT: "Resource"](BaseModel):
+    """Typed dependency on another resource for whole-instance access.
+
+    Use this when you need access to the full resource object (config, outputs,
+    methods) rather than just a single field value. Call resolve() in lifecycle
+    handlers to get the typed resource instance.
+
+    Example:
+        ```python
+        class AppConfig(Config):
+            database: Dependency[DatabaseResource]
+
+        async def on_create(self):
+            db = await self.config.database.resolve()
+            print(db.outputs.connection_url)
+        ```
+    """
+
+    model_config = {"populate_by_name": True}
+
+    dependency_marker: bool = PydanticField(
+        default=True, alias="__dependency__", serialization_alias="__dependency__"
+    )
+    provider: str
+    resource: str
+    name: str
+
+    _resolved: ResourceT | None = PrivateAttr(default=None)
+
+    @property
+    def id(self) -> str:
+        """Unique resource ID for the referenced resource."""
+        return format_resource_id(self.provider, self.resource, self.name)
+
+    async def resolve(self) -> ResourceT:
+        """Get the dependency's resource instance.
+
+        Returns:
+            The typed resource with access to its config, outputs, and methods.
+
+        Raises:
+            RuntimeError: If called outside a lifecycle handler.
+        """
+        if self._resolved is not None:
+            return self._resolved
+        raise RuntimeError(
+            f"Dependency '{self.id}' not resolved. "
+            "Call resolve() only within lifecycle handlers (on_create, on_update, on_delete)."
+        )
 
 
 type Field[T] = T | FieldReference

@@ -11,6 +11,7 @@ from pragma_sdk import (
     BuildInfo,
     BuildStatus,
     Config,
+    Dependency,
     DeploymentResult,
     DeploymentStatus,
     Field,
@@ -187,3 +188,136 @@ def test_deployment_result_progressing() -> None:
     )
     assert result.status == DeploymentStatus.PROGRESSING
     assert result.message == "Deployment in progress"
+
+
+# --- Dependency tests ---
+
+
+def test_dependency_fields() -> None:
+    """Dependency has provider, resource, name fields."""
+    from conftest import StubResource
+
+    dep = Dependency[StubResource](
+        provider="postgres",
+        resource="database",
+        name="my-db",
+    )
+    assert dep.provider == "postgres"
+    assert dep.resource == "database"
+    assert dep.name == "my-db"
+
+
+def test_dependency_id_property() -> None:
+    """Dependency.id returns formatted resource ID."""
+    from conftest import StubResource
+
+    dep = Dependency[StubResource](
+        provider="postgres",
+        resource="database",
+        name="my-db",
+    )
+    assert dep.id == "resource:postgres_database_my-db"
+
+
+def test_dependency_serialization_includes_marker() -> None:
+    """Dependency serialization includes __dependency__ marker."""
+    from conftest import StubResource
+
+    dep = Dependency[StubResource](
+        provider="postgres",
+        resource="database",
+        name="my-db",
+    )
+    data = dep.model_dump(by_alias=True)
+    assert data["__dependency__"] is True
+    assert data["provider"] == "postgres"
+    assert data["resource"] == "database"
+    assert data["name"] == "my-db"
+
+
+def test_dependency_type_extractable_at_runtime() -> None:
+    """Type parameter T is extractable at runtime via __pydantic_generic_metadata__."""
+    from conftest import StubResource
+
+    # Create a parameterized type
+    dep_type = Dependency[StubResource]
+
+    # Extract the type argument via Pydantic's generic metadata
+    # This is how the runtime will extract the type to instantiate the correct Resource subclass
+    metadata = getattr(dep_type, "__pydantic_generic_metadata__", None)
+    assert metadata is not None
+    assert "args" in metadata
+    assert len(metadata["args"]) == 1
+    assert metadata["args"][0] is StubResource
+
+    # Also verify it works on an instance's type
+    dep = Dependency[StubResource](
+        provider="test",
+        resource="stub",
+        name="my-db",
+    )
+    instance_metadata = getattr(type(dep), "__pydantic_generic_metadata__", None)
+    assert instance_metadata is not None
+    assert instance_metadata["args"][0] is StubResource
+
+
+@pytest.mark.anyio
+async def test_dependency_resolve_returns_cached_value() -> None:
+    """resolve() returns cached value when _resolved is populated."""
+    from conftest import StubConfig, StubOutputs, StubResource
+
+    # Create a resolved resource
+    config = StubConfig(name="my-db")
+    resource = StubResource(
+        name="my-db",
+        config=config,
+        outputs=StubOutputs(url="https://my-db.example.com"),
+    )
+
+    # Create dependency and populate _resolved
+    dep = Dependency[StubResource](
+        provider="test",
+        resource="stub",
+        name="my-db",
+    )
+    dep._resolved = resource
+
+    # resolve() should return the cached value
+    resolved = await dep.resolve()
+    assert resolved is resource
+    assert resolved.outputs is not None
+    assert resolved.outputs.url == "https://my-db.example.com"
+
+
+@pytest.mark.anyio
+async def test_dependency_resolve_raises_when_not_resolved() -> None:
+    """resolve() raises RuntimeError when _resolved is None."""
+    from conftest import StubResource
+
+    dep = Dependency[StubResource](
+        provider="postgres",
+        resource="database",
+        name="my-db",
+    )
+
+    with pytest.raises(RuntimeError, match="Dependency.*not resolved"):
+        await dep.resolve()
+
+
+def test_dependency_in_config() -> None:
+    """Dependency can be used as a field in Config."""
+    from conftest import StubResource
+
+    class AppConfig(Config):
+        database: Dependency[StubResource]
+
+    dep = Dependency[StubResource](
+        provider="test",
+        resource="stub",
+        name="my-db",
+    )
+    config = AppConfig(database=dep)
+
+    assert isinstance(config.database, Dependency)
+    assert config.database.name == "my-db"
+    assert config.database.id == "resource:test_stub_my-db"
