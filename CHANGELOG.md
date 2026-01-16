@@ -1,3 +1,9 @@
+## v0.13.0 (2026-01-16)
+
+### Feat
+
+- **sdk**: add is_dependency_marker utility function
+
 ## v0.12.0 (2026-01-16)
 
 ### Feat
