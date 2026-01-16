@@ -500,16 +500,13 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
 
         data = await wait_for_resource_state(self.id, LifecycleState.READY, timeout)
 
-        # Update self with the latest state
         self.lifecycle_state = LifecycleState(data.get("lifecycle_state", "ready"))
 
-        # Parse outputs if available and we have an outputs type
         outputs_data = data.get("outputs")
         if outputs_data is not None:
-            # Get the outputs type from the class generic parameters
             outputs_type = self._get_outputs_type()
             if outputs_type is not None:
-                self.outputs = outputs_type.model_validate(outputs_data)
+                self.outputs = outputs_type.model_validate(outputs_data)  # type: ignore[assignment]
             else:
                 self.outputs = outputs_data  # type: ignore[assignment]
 
@@ -519,7 +516,6 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
         """Get the OutputsT type from the model fields annotation."""
         import typing
 
-        # Get the annotation from the class model_fields['outputs']
         outputs_field = self.__class__.model_fields.get("outputs")
         if outputs_field is None:
             return None
@@ -528,12 +524,10 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
         if annotation is None:
             return None
 
-        # Handle Optional[OutputsT] (Union[OutputsT, None])
         origin = typing.get_origin(annotation)
         if origin is type(None):
             return None
 
-        # If it's a Union (Optional), get the non-None type
         if origin is typing.Union:
             args = typing.get_args(annotation)
             for arg in args:
@@ -541,7 +535,6 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
                     return arg
             return None
 
-        # Direct type
         if isinstance(annotation, type) and issubclass(annotation, Outputs):
             return annotation
 
