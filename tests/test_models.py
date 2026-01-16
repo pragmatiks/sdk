@@ -378,6 +378,53 @@ def test_is_dependency_marker_not_dict() -> None:
     assert is_dependency_marker([]) is False
 
 
+def test_is_field_ref_marker_valid() -> None:
+    """is_field_ref_marker returns True for valid __field_ref__ markers."""
+    from pragma_sdk import is_field_ref_marker
+
+    marker = {
+        "__field_ref__": True,
+        "ref": {
+            "provider": "postgres",
+            "resource": "database",
+            "name": "prod-db",
+            "field": "outputs.connection_url",
+        },
+        "resolved_value": "postgres://localhost/db",
+    }
+    assert is_field_ref_marker(marker) is True
+
+
+def test_is_field_ref_marker_missing_keys() -> None:
+    """is_field_ref_marker returns False when required keys are missing."""
+    from pragma_sdk import is_field_ref_marker
+
+    # Missing resolved_value
+    assert is_field_ref_marker({"__field_ref__": True, "ref": {}}) is False
+    # Missing ref
+    assert is_field_ref_marker({"__field_ref__": True, "resolved_value": "x"}) is False
+    # Missing __field_ref__
+    assert is_field_ref_marker({"ref": {}, "resolved_value": "x"}) is False
+
+
+def test_is_field_ref_marker_false_flag() -> None:
+    """is_field_ref_marker returns False when __field_ref__ is not True."""
+    from pragma_sdk import is_field_ref_marker
+
+    marker = {"__field_ref__": False, "ref": {}, "resolved_value": "x"}
+    assert is_field_ref_marker(marker) is False
+
+
+def test_is_field_ref_marker_not_dict() -> None:
+    """is_field_ref_marker returns False for non-dict values."""
+    from pragma_sdk import is_field_ref_marker
+
+    assert is_field_ref_marker("not a dict") is False
+    assert is_field_ref_marker(None) is False
+    assert is_field_ref_marker(123) is False
+    assert is_field_ref_marker([]) is False
+
+
 @pytest.mark.anyio
 async def test_dependency_resolve_idempotent() -> None:
     """Multiple resolve() calls return same instance."""

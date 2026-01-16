@@ -39,6 +39,7 @@ from pragma_sdk.models import (
     UserInfo,
     format_resource_id,
     is_dependency_marker,
+    is_field_ref_marker,
 )
 from pragma_sdk.platform import (
     SecretConfig,
@@ -63,6 +64,7 @@ __all__ = [
     "FieldReference",
     "format_resource_id",
     "is_dependency_marker",
+    "is_field_ref_marker",
     "LifecycleState",
     "Outputs",
     "PragmaClient",

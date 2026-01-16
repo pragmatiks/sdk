@@ -225,6 +225,24 @@ def is_dependency_marker(value: Any) -> bool:
     return required.issubset(value.keys()) and value.get("__dependency__") is True
 
 
+def is_field_ref_marker(value: Any) -> bool:
+    """Check if a value is a serialized FieldReference marker.
+
+    When a FieldReference is resolved, it becomes a dict with __field_ref__=True,
+    a 'ref' key containing the original reference, and a 'resolved_value' key.
+    This function detects such markers for re-resolution during propagation.
+
+    Args:
+        value: Any value to check.
+
+    Returns:
+        True if value is a __field_ref__ marker dict.
+    """
+    if not isinstance(value, dict):
+        return False
+    return value.get("__field_ref__") is True and "ref" in value and "resolved_value" in value
+
+
 class Dependency[ResourceT: "Resource"](BaseModel):
     """Typed dependency on another resource for whole-instance access.
 
