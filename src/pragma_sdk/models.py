@@ -260,19 +260,23 @@ class Dependency[ResourceT: "Resource"](BaseModel):
         return format_resource_id(self.provider, self.resource, self.name)
 
     async def resolve(self) -> ResourceT:
-        """Get the dependency's resource instance.
+        """Get the resolved resource instance.
+
+        The runtime injects resolved dependencies before calling lifecycle
+        handlers. This method returns that pre-resolved instance.
 
         Returns:
             The typed resource with access to its config, outputs, and methods.
 
         Raises:
-            RuntimeError: If called outside a lifecycle handler.
+            RuntimeError: If the dependency was not resolved by the runtime.
+                This happens when the dependent resource is not yet READY.
         """
         if self._resolved is not None:
             return self._resolved
         raise RuntimeError(
             f"Dependency '{self.id}' not resolved. "
-            "Call resolve() only within lifecycle handlers (on_create, on_update, on_delete)."
+            "The dependent resource may not be READY yet."
         )
 
 
