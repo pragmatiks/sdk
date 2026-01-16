@@ -1,3 +1,9 @@
+## v0.11.0 (2026-01-16)
+
+### Feat
+
+- Add list_resource_types method to SDK clients
+
 ## v0.10.3 (2026-01-15)
 
 ### Refactor
