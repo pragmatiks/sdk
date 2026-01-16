@@ -206,6 +206,25 @@ class FieldReference(ResourceReference):
     field: str
 
 
+def is_dependency_marker(value: Any) -> bool:
+    """Check if a value is a serialized Dependency marker.
+
+    When Dependency[T] is serialized (e.g., sent via API), it becomes a dict
+    with __dependency__=True and provider/resource/name keys. This function
+    detects such markers regardless of whether they've been resolved.
+
+    Args:
+        value: Any value to check.
+
+    Returns:
+        True if value is a dict with the required dependency keys and __dependency__=True.
+    """
+    if not isinstance(value, dict):
+        return False
+    required = {"__dependency__", "provider", "resource", "name"}
+    return required.issubset(value.keys()) and value.get("__dependency__") is True
+
+
 class Dependency[ResourceT: "Resource"](BaseModel):
     """Typed dependency on another resource for whole-instance access.
 

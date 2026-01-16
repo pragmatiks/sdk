@@ -20,6 +20,7 @@ from pragma_sdk import (
     PushResult,
     ResourceReference,
     format_resource_id,
+    is_dependency_marker,
 )
 
 
@@ -321,3 +322,57 @@ def test_dependency_in_config() -> None:
     assert isinstance(config.database, Dependency)
     assert config.database.name == "my-db"
     assert config.database.id == "resource:test_stub_my-db"
+
+
+# --- is_dependency_marker tests ---
+
+
+def test_is_dependency_marker_valid() -> None:
+    """is_dependency_marker returns True for valid dependency marker."""
+    marker = {
+        "__dependency__": True,
+        "provider": "test",
+        "resource": "database",
+        "name": "my-db",
+    }
+    assert is_dependency_marker(marker) is True
+
+
+def test_is_dependency_marker_with_extra_keys() -> None:
+    """is_dependency_marker returns True even with extra keys like 'ref'."""
+    marker = {
+        "__dependency__": True,
+        "provider": "test",
+        "resource": "database",
+        "name": "my-db",
+        "ref": {"some": "data"},  # Added after resolution
+    }
+    assert is_dependency_marker(marker) is True
+
+
+def test_is_dependency_marker_false_marker() -> None:
+    """is_dependency_marker returns False when __dependency__ is False."""
+    marker = {
+        "__dependency__": False,
+        "provider": "test",
+        "resource": "database",
+        "name": "my-db",
+    }
+    assert is_dependency_marker(marker) is False
+
+
+def test_is_dependency_marker_missing_keys() -> None:
+    """is_dependency_marker returns False when required keys are missing."""
+    marker = {
+        "__dependency__": True,
+        "provider": "test",
+    }
+    assert is_dependency_marker(marker) is False
+
+
+def test_is_dependency_marker_not_dict() -> None:
+    """is_dependency_marker returns False for non-dict values."""
+    assert is_dependency_marker("not a dict") is False
+    assert is_dependency_marker(None) is False
+    assert is_dependency_marker(123) is False
+    assert is_dependency_marker([]) is False
