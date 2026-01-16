@@ -1,3 +1,9 @@
+## v0.12.0 (2026-01-16)
+
+### Feat
+
+- add Dependency[T] generic type for whole-instance resource access
+
 ## v0.11.0 (2026-01-16)
 
 ### Feat
