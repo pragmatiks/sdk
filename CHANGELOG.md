@@ -1,3 +1,9 @@
+## v0.14.0 (2026-01-16)
+
+### Feat
+
+- **sdk**: add is_field_ref_marker() for reactive FieldReferences
+
 ## v0.13.0 (2026-01-16)
 
 ### Feat
