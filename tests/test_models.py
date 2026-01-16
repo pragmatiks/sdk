@@ -376,3 +376,58 @@ def test_is_dependency_marker_not_dict() -> None:
     assert is_dependency_marker(None) is False
     assert is_dependency_marker(123) is False
     assert is_dependency_marker([]) is False
+
+
+@pytest.mark.anyio
+async def test_dependency_resolve_idempotent() -> None:
+    """Multiple resolve() calls return same instance."""
+    from conftest import StubConfig, StubOutputs, StubResource
+
+    config = StubConfig(name="my-db")
+    resource = StubResource(
+        name="my-db",
+        config=config,
+        outputs=StubOutputs(url="https://my-db.example.com"),
+    )
+
+    dep = Dependency[StubResource](
+        provider="test",
+        resource="stub",
+        name="my-db",
+    )
+    dep._resolved = resource
+
+    first = await dep.resolve()
+    second = await dep.resolve()
+    third = await dep.resolve()
+
+    assert first is second is third is resource
+
+
+def test_dependency_serialization_excludes_resolved() -> None:
+    """Serialization excludes _resolved private attribute."""
+    from conftest import StubConfig, StubOutputs, StubResource
+
+    config = StubConfig(name="my-db")
+    resource = StubResource(
+        name="my-db",
+        config=config,
+        outputs=StubOutputs(url="https://my-db.example.com"),
+    )
+
+    dep = Dependency[StubResource](
+        provider="test",
+        resource="stub",
+        name="my-db",
+    )
+    dep._resolved = resource
+
+    data = dep.model_dump(by_alias=True)
+    assert "_resolved" not in data
+    assert "resolved" not in data
+    assert data == {
+        "__dependency__": True,
+        "provider": "test",
+        "resource": "stub",
+        "name": "my-db",
+    }
