@@ -1,3 +1,9 @@
+## v0.15.1 (2026-01-16)
+
+### Fix
+
+- remove comments violating no-comments policy
+
 ## v0.15.0 (2026-01-16)
 
 ### Feat
