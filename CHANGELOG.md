@@ -1,3 +1,9 @@
+## v0.15.0 (2026-01-16)
+
+### Feat
+
+- **sdk**: add subresource support with OwnerReference, apply(), wait_ready()
+
 ## v0.14.0 (2026-01-16)
 
 ### Feat
