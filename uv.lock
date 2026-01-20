@@ -390,7 +390,7 @@ wheels = [
 
 [[package]]
 name = "pragmatiks-sdk"
-version = "0.3.1"
+version = "0.15.1"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
@@ -402,6 +402,7 @@ dependencies = [
 dev = [
     { name = "commitizen" },
     { name = "pre-commit" },
+    { name = "respx" },
 ]
 test = [
     { name = "pytest" },
@@ -422,6 +423,7 @@ requires-dist = [
 dev = [
     { name = "commitizen", specifier = ">=4.11.0" },
     { name = "pre-commit", specifier = ">=4.0.0" },
+    { name = "respx", specifier = ">=0.22.0" },
 ]
 test = [
     { name = "pytest", specifier = ">=8.4.1" },
