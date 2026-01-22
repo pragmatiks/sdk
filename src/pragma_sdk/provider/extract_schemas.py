@@ -53,11 +53,12 @@ def get_config_class(resource_class: type[Resource]) -> type[Config]:
 def detect_provider_package() -> str | None:
     """Detect provider package name from current directory.
 
-    Reads pyproject.toml and returns the package name with underscores
-    if it ends with '-provider'.
+    Reads pyproject.toml and checks in order:
+    1. [tool.pragma] package - explicit module name
+    2. [project] name - converted to underscores if ends with '-provider'
 
     Returns:
-        Package name with underscores if found, None otherwise.
+        Package name if found, None otherwise.
     """
     pyproject = Path("pyproject.toml")
     if not pyproject.exists():
@@ -66,6 +67,12 @@ def detect_provider_package() -> str | None:
     with open(pyproject, "rb") as f:
         data = tomllib.load(f)
 
+    # Prefer explicit package name from [tool.pragma]
+    pragma_package = data.get("tool", {}).get("pragma", {}).get("package")
+    if pragma_package:
+        return pragma_package
+
+    # Fall back to project name conversion
     name = data.get("project", {}).get("name", "")
     if name and name.endswith("-provider"):
         return name.replace("-", "_")
