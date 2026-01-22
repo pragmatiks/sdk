@@ -1,3 +1,9 @@
+## v0.15.2 (2026-01-22)
+
+### Fix
+
+- read [tool.pragma] package for schema extraction
+
 ## v0.15.1 (2026-01-16)
 
 ### Fix
