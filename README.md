@@ -16,6 +16,8 @@ Build providers and interact with the pragma-os platform programmatically.
 
 ## Quick Start
 
+### Synchronous Client
+
 ```python
 from pragma_sdk import PragmaClient, Resource
 
@@ -35,6 +37,31 @@ with PragmaClient() as client:
     print(bucket.outputs)
 ```
 
+### Asynchronous Client
+
+```python
+import asyncio
+from pragma_sdk import AsyncPragmaClient, Resource
+
+async def main():
+    async with AsyncPragmaClient() as client:
+        # Apply a resource
+        await client.apply_resource(
+            Resource(
+                provider="gcp",
+                resource="storage",
+                name="my-bucket",
+                config={"location": "US", "storage_class": "STANDARD"}
+            )
+        )
+
+        # Get resource status
+        bucket = await client.get_resource("gcp", "storage", "my-bucket")
+        print(bucket.outputs)
+
+asyncio.run(main())
+```
+
 ## Installation
 
 ```bash
@@ -51,6 +78,8 @@ uv add pragmatiks-sdk
 
 - **HTTP Clients** - Sync and async clients for the pragma-os API
 - **Provider Authoring** - Build custom providers with type-safe Config and Outputs
+- **Provider Deployment** - Push, build, deploy, and rollback providers programmatically
+- **Dead-Letter Queue** - Inspect and retry failed events for debugging and recovery
 - **Field References** - Reference outputs from other resources dynamically
 - **Testing Harness** - Test provider lifecycle methods locally without deployment
 - **Auto-discovery** - Automatic credential resolution from environment or config files
@@ -126,18 +155,24 @@ async def test_bucket_creation():
 
 ## Authentication
 
-Credentials are discovered automatically:
+Credentials are discovered automatically in this order:
 
 1. Explicit `auth_token` parameter
-2. Environment variable: `PRAGMA_AUTH_TOKEN`
-3. Credentials file: `~/.config/pragma/credentials`
+2. Context-specific environment variable: `PRAGMA_AUTH_TOKEN_{CONTEXT}` (e.g., `PRAGMA_AUTH_TOKEN_PRODUCTION`)
+3. Generic environment variable: `PRAGMA_AUTH_TOKEN`
+4. Credentials file: `~/.config/pragma/credentials`
+
+The context is determined by: explicit `context` parameter > `PRAGMA_CONTEXT` env var > CLI config > `"default"`.
 
 ```python
-# Auto-discover credentials
+# Auto-discover credentials (uses default context)
 client = PragmaClient()
 
 # Explicit token
 client = PragmaClient(auth_token="sk_...")
+
+# Use a specific context (checks PRAGMA_AUTH_TOKEN_PRODUCTION first)
+client = PragmaClient(context="production")
 
 # Require authentication (fail if no token)
 client = PragmaClient(require_auth=True)
@@ -147,13 +182,49 @@ client = PragmaClient(require_auth=True)
 
 ### HTTP Client Methods
 
+Both `PragmaClient` (sync) and `AsyncPragmaClient` (async) provide the same methods.
+
+#### Resources
+
 | Method | Description |
 |--------|-------------|
 | `list_resources(provider, resource, tags)` | List resources with optional filters |
 | `get_resource(provider, resource, name)` | Get a specific resource |
 | `apply_resource(resource)` | Create or update a resource |
 | `delete_resource(provider, resource, name)` | Delete a resource |
+| `list_resource_types(provider)` | List available resource types from deployed providers |
+
+#### Providers
+
+| Method | Description |
+|--------|-------------|
+| `list_providers()` | List all providers for the current tenant |
+| `push_provider(provider_id, tarball)` | Push provider code and trigger a build |
+| `deploy_provider(provider_id, version)` | Deploy a provider (latest build if no version) |
+| `rollback_provider(provider_id, version)` | Rollback to a previous build version |
+| `delete_provider(provider_id, cascade)` | Delete a provider and associated resources |
+| `get_deployment_status(provider_id)` | Get deployment status for a provider |
+| `list_builds(provider_id)` | List builds for a provider |
+| `get_build_status(provider_id, version)` | Get status of a specific build |
+| `stream_build_logs(provider_id, version)` | Stream logs from a build |
+
+#### Dead-Letter Queue
+
+| Method | Description |
+|--------|-------------|
+| `list_dead_letter_events(provider)` | List dead letter events with optional provider filter |
+| `get_dead_letter_event(event_id)` | Get a dead letter event by ID |
+| `retry_dead_letter_event(event_id)` | Retry a single dead letter event |
+| `retry_all_dead_letter_events()` | Retry all dead letter events |
+| `delete_dead_letter_event(event_id)` | Delete a single dead letter event |
+| `delete_dead_letter_events(provider, all)` | Delete multiple dead letter events |
+
+#### User & Health
+
+| Method | Description |
+|--------|-------------|
 | `is_healthy()` | Check API health |
+| `get_me()` | Get current authenticated user information |
 
 ### Provider Classes
 
