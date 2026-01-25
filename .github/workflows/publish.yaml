@@ -83,7 +83,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: pragmatiks
-          repositories: providers,cli
+          repositories: pragma-providers,pragma-cli
 
       - name: Trigger providers update
         if: steps.bump.outputs.bumped == 'true'
