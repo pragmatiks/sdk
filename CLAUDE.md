@@ -9,11 +9,22 @@
 ```
 pragma-sdk/
 ├── src/pragma_sdk/
-│   ├── client.py          # Main PragmaClient
+│   ├── client.py          # PragmaClient (sync) and AsyncPragmaClient
 │   ├── models/            # Pydantic models (shared with API)
-│   └── resources/         # Resource-specific clients
+│   ├── resources/         # Resource-specific client methods
+│   └── provider/          # Provider authoring (Provider, Resource, Config, Outputs)
 └── tests/
 ```
+
+## Features
+
+**HTTP Clients**: Both sync (`PragmaClient`) and async (`AsyncPragmaClient`) with identical APIs.
+
+**Provider Authoring**: `Provider`, `Resource[Config, Outputs]`, `Field[T]`, `FieldReference` for building providers.
+
+**Testing Harness**: `ProviderHarness` for local lifecycle testing without deployment.
+
+**Auto-discovery**: Credentials resolved from env vars, context-specific tokens, or `~/.config/pragma/credentials`.
 
 ## Dependencies
 
@@ -33,7 +44,7 @@ Always use `task` commands:
 
 ## Patterns
 
-- All API methods are async
+- All API methods are async in `AsyncPragmaClient`, sync wrappers in `PragmaClient`
 - Pydantic models for request/response types
 - httpx for HTTP calls with respx for testing
 - Type hints on all public interfaces
@@ -43,6 +54,7 @@ Always use `task` commands:
 - Use respx to mock httpx calls
 - Fixtures in `conftest.py`
 - No real API calls in unit tests
+- Test both sync and async client methods
 
 ## Publishing to PyPI
 
@@ -64,9 +76,3 @@ uv publish           # Publish to PyPI (requires PYPI_TOKEN)
 **Version files**: `pyproject.toml` (version field updated by commitizen)
 
 **Tag format**: `v{version}` (e.g., `v0.15.1`)
-
-## Related Repositories
-
-- `../pragma-os/` - API server (defines the contracts)
-- `../pragma-cli/` - CLI (consumes this SDK)
-- `../pragma-providers/` - Providers (use SDK for API calls)
