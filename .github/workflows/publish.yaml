@@ -35,28 +35,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version
+      - name: Bump version and create changelog
         id: bump
         run: |
-          OLD_VERSION=$(cz version --project)
-          if cz bump --yes --changelog 2>&1 | tee bump_output.txt; then
+          cz bump --yes --changelog 2>&1 | tee bump_output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+
+          # Check for no-bump scenarios (cz bump exits 0 even for NO_COMMITS_TO_BUMP)
+          if grep -qE "No commits found|is not a bump|NO_COMMITS_TO_BUMP" bump_output.txt; then
+            echo "No version bump needed"
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          elif [ $EXIT_CODE -eq 0 ]; then
+            echo "bumped=true" >> $GITHUB_OUTPUT
             NEW_VERSION=$(cz version --project)
-            if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
-              echo "Version bumped: $OLD_VERSION -> $NEW_VERSION"
-              echo "bumped=true" >> $GITHUB_OUTPUT
-              echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-            else
-              echo "No version change (was $OLD_VERSION)"
-              echo "bumped=false" >> $GITHUB_OUTPUT
-            fi
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           else
-            if grep -q "No commits found\|is not a bump\|No eligible commits\|nothing to bump" bump_output.txt; then
-              echo "No version bump needed"
-              echo "bumped=false" >> $GITHUB_OUTPUT
-            else
-              cat bump_output.txt
-              exit 1
-            fi
+            cat bump_output.txt
+            exit 1
           fi
 
       - name: Push changes
