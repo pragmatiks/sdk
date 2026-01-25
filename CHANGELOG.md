@@ -1,3 +1,9 @@
+## v0.15.3 (2026-01-25)
+
+### Fix
+
+- **ci**: correct repo names for cross-repo triggers
+
 ## v0.15.2 (2026-01-22)
 
 ### Fix
