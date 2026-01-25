@@ -1,3 +1,9 @@
+## v0.15.4 (2026-01-25)
+
+### Fix
+
+- **ci**: detect actual version change before publishing
+
 ## v0.15.3 (2026-01-25)
 
 ### Fix
