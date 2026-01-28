@@ -7,22 +7,19 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from pydantic import ValidationError
 
-from pragma_sdk import (
+from pragma_sdk import Config, Dependency, Field, FieldReference, LifecycleState
+from pragma_sdk.models import (
     BuildInfo,
     BuildStatus,
-    Config,
-    Dependency,
     DeploymentResult,
     DeploymentStatus,
-    Field,
-    FieldReference,
-    LifecycleState,
     OwnerReference,
     PushResult,
     ResourceReference,
     format_resource_id,
     is_dependency_marker,
 )
+
 
 if TYPE_CHECKING:
     from conftest import StubResource
@@ -427,7 +424,7 @@ def test_is_dependency_marker_not_dict() -> None:
 
 def test_is_field_ref_marker_valid() -> None:
     """is_field_ref_marker returns True for valid __field_ref__ markers."""
-    from pragma_sdk import is_field_ref_marker
+    from pragma_sdk.models import is_field_ref_marker
 
     marker = {
         "__field_ref__": True,
@@ -444,7 +441,7 @@ def test_is_field_ref_marker_valid() -> None:
 
 def test_is_field_ref_marker_missing_keys() -> None:
     """is_field_ref_marker returns False when required keys are missing."""
-    from pragma_sdk import is_field_ref_marker
+    from pragma_sdk.models import is_field_ref_marker
 
     # Missing resolved_value
     assert is_field_ref_marker({"__field_ref__": True, "ref": {}}) is False
@@ -456,7 +453,7 @@ def test_is_field_ref_marker_missing_keys() -> None:
 
 def test_is_field_ref_marker_false_flag() -> None:
     """is_field_ref_marker returns False when __field_ref__ is not True."""
-    from pragma_sdk import is_field_ref_marker
+    from pragma_sdk.models import is_field_ref_marker
 
     marker = {"__field_ref__": False, "ref": {}, "resolved_value": "x"}
     assert is_field_ref_marker(marker) is False
@@ -464,7 +461,7 @@ def test_is_field_ref_marker_false_flag() -> None:
 
 def test_is_field_ref_marker_not_dict() -> None:
     """is_field_ref_marker returns False for non-dict values."""
-    from pragma_sdk import is_field_ref_marker
+    from pragma_sdk.models import is_field_ref_marker
 
     assert is_field_ref_marker("not a dict") is False
     assert is_field_ref_marker(None) is False
@@ -684,6 +681,7 @@ async def test_apply_sets_lifecycle_state_to_pending(stub_resource: StubResource
 async def test_apply_includes_owner_references(stub_resource: StubResource) -> None:
     """apply() includes owner_references in serialized data."""
     from conftest import StubConfig, StubResource
+
     from pragma_sdk.context import reset_runtime_context, set_runtime_context
 
     owner = StubResource(name="parent-resource", config=StubConfig(name="parent"))
@@ -850,9 +848,7 @@ async def test_wait_ready_propagates_timeout_error(stub_resource: StubResource) 
     """wait_ready() propagates TimeoutError from context."""
     from pragma_sdk.context import reset_runtime_context, set_runtime_context
 
-    ctx = MockRuntimeContextForWaitReady(
-        raise_exception=TimeoutError("Resource not ready within timeout")
-    )
+    ctx = MockRuntimeContextForWaitReady(raise_exception=TimeoutError("Resource not ready within timeout"))
     token = set_runtime_context(ctx)
     try:
         with pytest.raises(TimeoutError, match="Resource not ready within timeout"):
@@ -864,8 +860,8 @@ async def test_wait_ready_propagates_timeout_error(stub_resource: StubResource) 
 @pytest.mark.asyncio
 async def test_wait_ready_propagates_resource_failed_error(stub_resource: StubResource) -> None:
     """wait_ready() propagates ResourceFailedError from context."""
-    from pragma_sdk import ResourceFailedError
     from pragma_sdk.context import reset_runtime_context, set_runtime_context
+    from pragma_sdk.exceptions import ResourceFailedError
 
     ctx = MockRuntimeContextForWaitReady(
         raise_exception=ResourceFailedError("resource:test_stub_test", "Database connection failed")

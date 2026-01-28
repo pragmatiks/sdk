@@ -7,12 +7,12 @@ import pytest
 import respx
 from conftest import StubConfig, StubResource
 
+from pragma_sdk import LifecycleState
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
 from pragma_sdk.models import (
     BuildInfo,
     BuildStatus,
     DeploymentStatus,
-    LifecycleState,
     ProviderStatus,
     PushResult,
 )
