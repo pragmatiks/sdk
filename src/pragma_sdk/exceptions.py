@@ -28,5 +28,5 @@ class ResourceFailedError(Exception):
 
         if error:
             message += f": {error}"
-            
+
         super().__init__(message)
