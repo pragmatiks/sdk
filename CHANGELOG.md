@@ -1,3 +1,9 @@
+## v0.15.6 (2026-01-28)
+
+### Refactor
+
+- split models into package and align tooling (#1)
+
 ## v0.15.5 (2026-01-25)
 
 ### Fix
