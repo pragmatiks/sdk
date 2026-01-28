@@ -15,7 +15,8 @@ class BearerAuth(httpx.Auth):
         ValueError: If token is empty.
 
     Example:
-        >>> from pragma_sdk import PragmaClient, BearerAuth
+        >>> from pragma_sdk import PragmaClient
+        >>> from pragma_sdk.auth import BearerAuth
         >>> auth = BearerAuth(token="sk_test_...")
         >>> client = PragmaClient(auth=auth)
     """

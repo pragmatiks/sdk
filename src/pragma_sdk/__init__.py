@@ -1,99 +1,40 @@
-"""Python client and provider authoring framework for the Pragmatiks API.
+"""Python SDK for the Pragmatiks platform.
 
-Key exports:
-    PragmaClient: Synchronous HTTP client for Pragmatiks API.
-    AsyncPragmaClient: Asynchronous HTTP client for Pragmatiks API.
-    Provider: Decorator for provider authoring.
+Core exports for provider authoring:
+    Provider: Decorator for defining providers.
     Resource: Base class for provider resources.
     Config: Base class for resource configuration.
     Outputs: Base class for resource outputs.
-    Field: Field descriptor for configuration and output schemas.
+    Field, FieldReference, Dependency: For cross-resource references.
 
-Platform resource types:
-    SecretConfig, SecretOutputs: Secret resource types.
-    create_secret_config: Builder function for Secret resources.
+Core exports for API consumers:
+    PragmaClient: Synchronous HTTP client.
+    AsyncPragmaClient: Asynchronous HTTP client.
+
+Additional imports available from submodules:
+    pragma_sdk.models: Data models (BuildInfo, ProviderStatus, etc.)
+    pragma_sdk.types: Type definitions (LifecycleState, HealthStatus, LogEntry)
+    pragma_sdk.context: Runtime context utilities
+    pragma_sdk.platform: Platform resource types (SecretConfig, etc.)
 """
 
-from pragma_sdk.auth import BearerAuth
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
-from pragma_sdk.context import (
-    RuntimeContext,
-    get_runtime_context,
-    reset_runtime_context,
-    set_runtime_context,
-    wait_for_resource_state,
-)
-from pragma_sdk.exceptions import ResourceFailedError
-from pragma_sdk.models import (
-    BuildInfo,
-    BuildStatus,
-    Config,
-    Dependency,
-    DeploymentResult,
-    DeploymentStatus,
-    EventType,
-    Field,
-    FieldReference,
-    LifecycleState,
-    Outputs,
-    OwnerReference,
-    ProviderDeleteResult,
-    ProviderInfo,
-    ProviderResponse,
-    ProviderStatus,
-    PushResult,
-    Resource,
-    ResourceReference,
-    ResponseStatus,
-    UserInfo,
-    format_resource_id,
-    is_dependency_marker,
-    is_field_ref_marker,
-)
-from pragma_sdk.platform import (
-    SecretConfig,
-    SecretOutputs,
-    create_secret_config,
-)
+from pragma_sdk.models import Config, Dependency, Field, FieldReference, Outputs, Resource
 from pragma_sdk.provider import Provider
+from pragma_sdk.types import HealthStatus, LifecycleState, LogEntry
 
 
 __all__ = [
     "AsyncPragmaClient",
-    "BearerAuth",
-    "BuildInfo",
-    "BuildStatus",
     "Config",
-    "ResourceFailedError",
-    "create_secret_config",
     "Dependency",
-    "DeploymentResult",
-    "DeploymentStatus",
-    "EventType",
     "Field",
     "FieldReference",
-    "format_resource_id",
-    "get_runtime_context",
-    "is_dependency_marker",
-    "is_field_ref_marker",
+    "HealthStatus",
     "LifecycleState",
+    "LogEntry",
     "Outputs",
-    "OwnerReference",
     "PragmaClient",
     "Provider",
-    "ProviderDeleteResult",
-    "ProviderInfo",
-    "ProviderResponse",
-    "ProviderStatus",
-    "PushResult",
-    "reset_runtime_context",
     "Resource",
-    "ResourceReference",
-    "ResponseStatus",
-    "RuntimeContext",
-    "SecretConfig",
-    "SecretOutputs",
-    "set_runtime_context",
-    "UserInfo",
-    "wait_for_resource_state",
 ]

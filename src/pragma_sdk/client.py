@@ -157,9 +157,6 @@ class PragmaClient(BaseClient):
 
         Returns:
             UserInfo with user ID, email, organization ID and name.
-
-        Raises:
-            httpx.HTTPStatusError: If not authenticated or API call fails.
         """
         response = self._request("GET", "/auth/me")
         return UserInfo.model_validate(response)

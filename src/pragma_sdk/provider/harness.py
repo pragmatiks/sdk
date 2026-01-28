@@ -41,7 +41,8 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import uuid4
 
-from pragma_sdk.models import Config, LifecycleState, Outputs, Resource
+from pragma_sdk.models import Config, Outputs, Resource
+from pragma_sdk.types import LifecycleState
 
 
 class EventType(StrEnum):

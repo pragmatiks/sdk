@@ -13,10 +13,9 @@ exported functions instead.
 from __future__ import annotations
 
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import Any, Protocol
 
-if TYPE_CHECKING:
-    from pragma_sdk.models import LifecycleState
+from pragma_sdk.types import LifecycleState
 
 
 class RuntimeContext(Protocol):
@@ -64,9 +63,7 @@ class RuntimeContext(Protocol):
         ...
 
 
-_runtime_context: ContextVar[RuntimeContext | None] = ContextVar(
-    "_runtime_context", default=None
-)
+_runtime_context: ContextVar[RuntimeContext | None] = ContextVar("_runtime_context", default=None)
 
 
 def set_runtime_context(ctx: RuntimeContext) -> Any:
@@ -122,12 +119,12 @@ async def wait_for_resource_state(
         Resource data dict from the state notification.
 
     Raises:
-        TimeoutError: If target state not reached within timeout.
         RuntimeError: If called outside a lifecycle handler context.
 
     Example:
         ```python
-        from pragma_sdk import Resource, LifecycleState, wait_for_resource_state
+        from pragma_sdk import Resource, LifecycleState
+        from pragma_sdk.context import wait_for_resource_state
 
         class MyResource(Resource[MyConfig, MyOutputs]):
             async def on_create(self):
@@ -143,9 +140,7 @@ async def wait_for_resource_state(
     """
     ctx = _runtime_context.get()
     if ctx is None:
-        raise RuntimeError(
-            "wait_for_resource_state must be called from within a provider lifecycle handler"
-        )
+        raise RuntimeError("wait_for_resource_state must be called from within a provider lifecycle handler")
     return await ctx.wait_for_state(resource_id, target_state, timeout)
 
 
@@ -180,7 +175,5 @@ async def apply_resource(resource_data: dict[str, Any]) -> None:
     """
     ctx = _runtime_context.get()
     if ctx is None:
-        raise RuntimeError(
-            "apply_resource must be called from within a provider lifecycle handler"
-        )
+        raise RuntimeError("apply_resource must be called from within a provider lifecycle handler")
     await ctx.apply_resource(resource_data)

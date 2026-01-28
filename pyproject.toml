@@ -4,7 +4,7 @@ version = "0.15.5"
 description = "Python SDK for the Pragmatiks platform"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["httpx>=0.28.1", "pydantic>=2.11.4", "pyyaml>=6.0"]
+dependencies = ["httpx>=0.28.1", "pydantic>=2.11.4", "pyyaml>=6.0", "structlog>=24.1.0"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -12,7 +12,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# [project.optional-dependencies]
+[project.optional-dependencies]
 # gcp = ["pragmatiks-gcp-provider"]  # future
 # aws = ["pragmatiks-aws-provider"]  # future
 # azure = ["pragmatiks-azure-provider"]  # future
@@ -25,6 +25,7 @@ test = [
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.14.0",
     "respx>=0.21.1",
+    "httpx>=0.28.1",
 ]
 dev = [
     "commitizen>=4.11.0",
@@ -40,8 +41,48 @@ pythonpath = ["tests"]
 target-version = "py313"
 line-length = 120
 
+[tool.ruff.lint]
+preview = true
+select = [
+    "E",       # pycodestyle errors
+    "W",       # pycodestyle warnings
+    "F",       # Pyflakes
+    "I",       # isort
+    "PLC0415", # import-outside-top-level
+    "UP",      # Pyupgrade
+    "D",       # pydocstyle - docstring conventions
+    "DOC",     # Ruff's docstring checks (parameters match signature)
+    "PT",      # pytest rules
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.lint.isort]
+lines-after-imports = 2
 known-first-party = ["pragma_sdk"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = [
+    "D100",     # Missing docstring in public module
+    "D101",     # Missing docstring in public class
+    "D102",     # Missing docstring in public method
+    "D103",     # Missing docstring in public function
+    "D104",     # Missing docstring in public package
+    "D107",     # Missing docstring in __init__
+    "DOC",      # Docstring content rules (Returns, Raises, Yields sections)
+    "PLC0415",  # Import outside top-level (common in tests for isolation)
+]
+
+[tool.ruff.format]
+preview = true
+
+[tool.ty.environment]
+python-version = "3.13"
+python-platform = "darwin"
+
+[tool.ty.src]
+exclude = ["**/tests/**", "**/__pycache__/**"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
