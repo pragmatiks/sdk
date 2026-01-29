@@ -85,7 +85,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: pragmatiks
-          repositories: pragma-providers,pragma-cli
+          repositories: pragma-providers,pragma-cli,pragma-os
 
       - name: Trigger providers update
         if: steps.bump.outputs.bumped == 'true'
@@ -103,4 +103,13 @@ jobs:
         run: |
           gh workflow run update-sdk.yaml \
             --repo pragmatiks/pragma-cli \
+            --field sdk_version=${{ steps.bump.outputs.version }}
+
+      - name: Trigger OS update and runtime rebuild
+        if: steps.bump.outputs.bumped == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh workflow run update-sdk.yaml \
+            --repo pragmatiks/pragma-os \
             --field sdk_version=${{ steps.bump.outputs.version }}
