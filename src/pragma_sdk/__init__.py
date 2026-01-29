@@ -19,15 +19,31 @@ Additional imports available from submodules:
 """
 
 from pragma_sdk.client import AsyncPragmaClient, PragmaClient
-from pragma_sdk.models import Config, Dependency, Field, FieldReference, Outputs, Resource
+from pragma_sdk.models import (
+    BuildInfo,
+    BuildStatus,
+    Config,
+    Dependency,
+    DeploymentStatus,
+    Field,
+    FieldReference,
+    Outputs,
+    ProviderDeleteResult,
+    ProviderInfo,
+    PushResult,
+    Resource,
+)
 from pragma_sdk.provider import Provider
 from pragma_sdk.types import HealthStatus, LifecycleState, LogEntry
 
 
 __all__ = [
     "AsyncPragmaClient",
+    "BuildInfo",
+    "BuildStatus",
     "Config",
     "Dependency",
+    "DeploymentStatus",
     "Field",
     "FieldReference",
     "HealthStatus",
@@ -36,5 +52,8 @@ __all__ = [
     "Outputs",
     "PragmaClient",
     "Provider",
+    "ProviderDeleteResult",
+    "ProviderInfo",
+    "PushResult",
     "Resource",
 ]
