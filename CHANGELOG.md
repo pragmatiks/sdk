@@ -1,3 +1,10 @@
+## v0.16.0 (2026-01-29)
+
+### Feat
+
+- trigger pragma-os update on SDK publish
+- export API consumer types from top-level module
+
 ## v0.15.6 (2026-01-28)
 
 ### Refactor
