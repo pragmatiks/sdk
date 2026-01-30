@@ -1,3 +1,9 @@
+## v0.17.0 (2026-01-30)
+
+### Feat
+
+- add owner context for automatic owner_references (#2)
+
 ## v0.16.0 (2026-01-29)
 
 ### Feat
