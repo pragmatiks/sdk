@@ -733,6 +733,92 @@ async def test_apply_propagates_runtime_error(stub_resource: StubResource) -> No
         reset_runtime_context(token)
 
 
+@pytest.mark.asyncio
+async def test_apply_auto_sets_owner_from_context(stub_resource: StubResource) -> None:
+    """apply() automatically sets owner from current resource context."""
+    from pragma_sdk.context import (
+        reset_current_resource_owner,
+        reset_runtime_context,
+        set_current_resource_owner,
+        set_runtime_context,
+    )
+
+    parent_owner = OwnerReference(provider="test", resource="parent", name="my-parent")
+
+    ctx = MockRuntimeContextForApply()
+    runtime_token = set_runtime_context(ctx)
+    owner_token = set_current_resource_owner(parent_owner)
+    try:
+        assert len(stub_resource.owner_references) == 0
+
+        await stub_resource.apply()
+
+        assert len(stub_resource.owner_references) == 1
+        assert stub_resource.owner_references[0] == parent_owner
+
+        data = ctx.apply_calls[0]
+        assert len(data["owner_references"]) == 1
+        assert data["owner_references"][0]["provider"] == "test"
+        assert data["owner_references"][0]["resource"] == "parent"
+        assert data["owner_references"][0]["name"] == "my-parent"
+    finally:
+        reset_current_resource_owner(owner_token)
+        reset_runtime_context(runtime_token)
+
+
+@pytest.mark.asyncio
+async def test_apply_does_not_duplicate_owner_from_context(stub_resource: StubResource) -> None:
+    """apply() does not add duplicate owner if already in owner_references."""
+    from conftest import StubConfig, StubResource
+
+    from pragma_sdk.context import (
+        reset_current_resource_owner,
+        reset_runtime_context,
+        set_current_resource_owner,
+        set_runtime_context,
+    )
+
+    parent_owner = OwnerReference(provider="test", resource="parent", name="my-parent")
+
+    stub_resource.owner_references.append(parent_owner)
+
+    ctx = MockRuntimeContextForApply()
+    runtime_token = set_runtime_context(ctx)
+    owner_token = set_current_resource_owner(parent_owner)
+    try:
+        assert len(stub_resource.owner_references) == 1
+
+        await stub_resource.apply()
+
+        assert len(stub_resource.owner_references) == 1
+
+        data = ctx.apply_calls[0]
+        assert len(data["owner_references"]) == 1
+    finally:
+        reset_current_resource_owner(owner_token)
+        reset_runtime_context(runtime_token)
+
+
+@pytest.mark.asyncio
+async def test_apply_without_owner_context_does_not_add_owner(stub_resource: StubResource) -> None:
+    """apply() does not add owner when no current resource context is set."""
+    from pragma_sdk.context import reset_runtime_context, set_runtime_context
+
+    ctx = MockRuntimeContextForApply()
+    token = set_runtime_context(ctx)
+    try:
+        assert len(stub_resource.owner_references) == 0
+
+        await stub_resource.apply()
+
+        assert len(stub_resource.owner_references) == 0
+
+        data = ctx.apply_calls[0]
+        assert data["owner_references"] == []
+    finally:
+        reset_runtime_context(token)
+
+
 # ==================== Resource.wait_ready() Tests ====================
 
 

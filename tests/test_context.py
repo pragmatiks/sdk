@@ -8,11 +8,15 @@ import pytest
 
 from pragma_sdk import LifecycleState
 from pragma_sdk.context import (
+    get_current_resource_owner,
     get_runtime_context,
+    reset_current_resource_owner,
     reset_runtime_context,
+    set_current_resource_owner,
     set_runtime_context,
     wait_for_resource_state,
 )
+from pragma_sdk.models.references import OwnerReference
 
 
 class MockRuntimeContext:
@@ -98,3 +102,34 @@ async def test_wait_for_resource_state_uses_default_timeout():
         assert ctx.wait_calls[0][2] == 60.0
     finally:
         reset_runtime_context(token)
+
+
+def test_get_current_resource_owner_returns_none_when_not_set():
+    """get_current_resource_owner() returns None when no owner is set."""
+    assert get_current_resource_owner() is None
+
+
+def test_set_current_resource_owner_returns_token():
+    """set_current_resource_owner() returns a token for resetting."""
+    owner = OwnerReference(provider="test", resource="database", name="my-db")
+    token = set_current_resource_owner(owner)
+    assert token is not None
+    reset_current_resource_owner(token)
+
+
+def test_get_current_resource_owner_returns_set_owner():
+    """get_current_resource_owner() returns the owner that was set."""
+    owner = OwnerReference(provider="test", resource="database", name="my-db")
+    token = set_current_resource_owner(owner)
+    try:
+        assert get_current_resource_owner() is owner
+    finally:
+        reset_current_resource_owner(token)
+
+
+def test_reset_current_resource_owner_clears_owner():
+    """reset_current_resource_owner() clears the owner."""
+    owner = OwnerReference(provider="test", resource="database", name="my-db")
+    token = set_current_resource_owner(owner)
+    reset_current_resource_owner(token)
+    assert get_current_resource_owner() is None

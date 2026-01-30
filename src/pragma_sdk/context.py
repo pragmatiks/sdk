@@ -13,9 +13,13 @@ exported functions instead.
 from __future__ import annotations
 
 from contextvars import ContextVar
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from pragma_sdk.types import LifecycleState
+
+
+if TYPE_CHECKING:
+    from pragma_sdk.models.references import OwnerReference
 
 
 class RuntimeContext(Protocol):
@@ -64,6 +68,7 @@ class RuntimeContext(Protocol):
 
 
 _runtime_context: ContextVar[RuntimeContext | None] = ContextVar("_runtime_context", default=None)
+_current_resource_owner: ContextVar[OwnerReference | None] = ContextVar("_current_resource_owner", default=None)
 
 
 def set_runtime_context(ctx: RuntimeContext) -> Any:
@@ -167,8 +172,7 @@ async def apply_resource(resource_data: dict[str, Any]) -> None:
                     name=f"{self.name}-db",
                     config=DbConfig(port=5432),
                 )
-                db.set_owner(self)
-                await db.apply()  # Internally calls apply_resource
+                await db.apply()  # Owner automatically set from context
                 await db.wait_ready()
                 return AppOutputs(db_url=db.outputs.connection_url)
         ```
@@ -177,3 +181,38 @@ async def apply_resource(resource_data: dict[str, Any]) -> None:
     if ctx is None:
         raise RuntimeError("apply_resource must be called from within a provider lifecycle handler")
     await ctx.apply_resource(resource_data)
+
+
+def set_current_resource_owner(owner: OwnerReference) -> Any:
+    """Set the current executing resource as owner for child resources.
+
+    Called by the runtime before invoking lifecycle methods. When a child
+    resource calls apply(), it will automatically have this owner added
+    to its owner_references.
+
+    Args:
+        owner: OwnerReference for the currently executing resource.
+
+    Returns:
+        Token for resetting the owner context.
+    """
+    return _current_resource_owner.set(owner)
+
+
+def reset_current_resource_owner(token: Any) -> None:
+    """Reset the current resource owner using the token from set_current_resource_owner().
+
+    Args:
+        token: Token returned by set_current_resource_owner().
+    """
+    _current_resource_owner.reset(token)
+
+
+def get_current_resource_owner() -> OwnerReference | None:
+    """Get the current resource owner, if any.
+
+    Returns:
+        OwnerReference for the currently executing resource, or None if
+        not in a lifecycle handler context.
+    """
+    return _current_resource_owner.get()
