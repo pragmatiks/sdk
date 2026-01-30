@@ -10,7 +10,7 @@ from typing import ClassVar
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
 
-from pragma_sdk.context import apply_resource, wait_for_resource_state
+from pragma_sdk.context import apply_resource, get_current_resource_owner, wait_for_resource_state
 from pragma_sdk.models.references import OwnerReference, ResourceReference, format_resource_id
 from pragma_sdk.types import HealthStatus, LifecycleState, LogEntry
 
@@ -125,7 +125,9 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
         The resource's lifecycle_state will be set to PENDING by the API.
 
         Call this from within provider lifecycle handlers to create subresources.
-        After apply(), call wait_ready() to wait for the resource to be processed.
+        The owner is automatically set from the current runtime context (the
+        resource whose lifecycle handler is executing). After apply(), call
+        wait_ready() to wait for the resource to be processed.
 
         Returns:
             Self for method chaining.
@@ -134,12 +136,15 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
             ```python
             async def on_create(self):
                 db = DatabaseResource(name=f"{self.name}-db", config=DbConfig(...))
-                db.set_owner(self)
-                await db.apply()
+                await db.apply()  # Owner automatically set from context
                 await db.wait_ready(timeout=120.0)
                 return AppOutputs(db_url=db.outputs.connection_url)
             ```
         """
+        current_owner = get_current_resource_owner()
+        if current_owner is not None and current_owner not in self.owner_references:
+            self.owner_references.append(current_owner)
+
         resource_data = {
             "provider": self.provider,
             "resource": self.resource,
