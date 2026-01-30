@@ -176,8 +176,7 @@ class Resource[ConfigT: Config, OutputsT: Outputs](BaseModel):
             ```python
             async def on_create(self):
                 db = DatabaseResource(name=f"{self.name}-db", config=DbConfig(...))
-                db.set_owner(self)
-                await db.apply()
+                await db.apply()  # Owner automatically set from context
                 await db.wait_ready(timeout=120.0)
                 return AppOutputs(db_url=db.outputs.connection_url)
             ```
