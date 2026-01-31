@@ -1,3 +1,9 @@
+## v0.18.0 (2026-01-31)
+
+### Feat
+
+- add upload_file method to PragmaClient
+
 ## v0.17.1 (2026-01-31)
 
 ### Fix
