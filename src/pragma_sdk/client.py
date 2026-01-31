@@ -546,6 +546,26 @@ class PragmaClient(BaseClient):
         response = self._request("GET", "/providers/")
         return [ProviderInfo.model_validate(item) for item in response]
 
+    def upload_file(self, name: str, content: bytes, content_type: str) -> dict[str, Any]:
+        """Upload a file to the Pragma file storage.
+
+        Args:
+            name: Name of the file (used in the storage path).
+            content: Raw file content as bytes.
+            content_type: MIME type of the file (e.g., "image/png", "application/pdf").
+
+        Returns:
+            Dict containing url, public_url, size, content_type, checksum, uploaded_at.
+
+        Raises:
+            httpx.HTTPStatusError: If the upload fails.
+        """  # noqa: DOC502
+        return self._request(
+            "POST",
+            f"/files/{name}/upload",
+            files={"file": (name, content, content_type)},
+        )
+
 
 class AsyncPragmaClient(BaseClient):
     """Asynchronous client for the Pragma API.
@@ -1015,3 +1035,23 @@ class AsyncPragmaClient(BaseClient):
         """  # noqa: DOC502
         response = await self._request("GET", "/providers/")
         return [ProviderInfo.model_validate(item) for item in response]
+
+    async def upload_file(self, name: str, content: bytes, content_type: str) -> dict[str, Any]:
+        """Upload a file to the Pragma file storage.
+
+        Args:
+            name: Name of the file (used in the storage path).
+            content: Raw file content as bytes.
+            content_type: MIME type of the file (e.g., "image/png", "application/pdf").
+
+        Returns:
+            Dict containing url, public_url, size, content_type, checksum, uploaded_at.
+
+        Raises:
+            httpx.HTTPStatusError: If the upload fails.
+        """  # noqa: DOC502
+        return await self._request(
+            "POST",
+            f"/files/{name}/upload",
+            files={"file": (name, content, content_type)},
+        )
