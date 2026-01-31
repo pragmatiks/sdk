@@ -15,10 +15,13 @@ if TYPE_CHECKING:
 def format_resource_id(provider: str, resource: str, name: str) -> str:
     """Format a unique resource ID.
 
+    Slashes in resource type are replaced with underscores for URL safety.
+
     Returns:
         Resource ID as `resource:{provider}_{resource}_{name}`.
     """
-    return f"resource:{provider}_{resource}_{name}"
+    resource_normalized = resource.replace("/", "_")
+    return f"resource:{provider}_{resource_normalized}_{name}"
 
 
 class ResourceReference(BaseModel):

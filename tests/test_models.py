@@ -769,8 +769,6 @@ async def test_apply_auto_sets_owner_from_context(stub_resource: StubResource) -
 @pytest.mark.asyncio
 async def test_apply_does_not_duplicate_owner_from_context(stub_resource: StubResource) -> None:
     """apply() does not add duplicate owner if already in owner_references."""
-    from conftest import StubConfig, StubResource
-
     from pragma_sdk.context import (
         reset_current_resource_owner,
         reset_runtime_context,
