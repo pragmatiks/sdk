@@ -1,3 +1,9 @@
+## v0.17.1 (2026-01-31)
+
+### Fix
+
+- **models**: normalize slashes in resource IDs (#3)
+
 ## v0.17.0 (2026-01-30)
 
 ### Feat
